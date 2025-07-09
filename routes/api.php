@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountDetailsController;
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
@@ -42,6 +43,7 @@ Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'au
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::post('/add-category', [CategoryController::class, 'store']);
     Route::get('/get-category', [CategoryController::class, 'index']);
+    Route::post('/add-discount', [DiscountController::class, 'store']);
 });
 
 
