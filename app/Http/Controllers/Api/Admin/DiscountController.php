@@ -29,7 +29,7 @@ class DiscountController extends Controller
             'type.required' => 'Discount type is required.',
             'type.in' => 'Type must be either Percentage or Fixed.',
             'amount.required' => 'Amount is required.',
-            'minimum_order_value.required' => 'Minimum order value is required.',
+            'minimum_order_value.required' => 'Minimum value order is required.',
             'maximum_discount.required_if' => 'Maximum discount is required when type is Percentage.',
             'discount_code.required' => 'Discount code is required.',
             'discount_code.unique' => 'This discount code already exists.',
