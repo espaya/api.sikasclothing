@@ -6,13 +6,21 @@ use Illuminate\Database\Eloquent\Model;
 
 class Products extends Model
 {
-    protected $table = 'products';
+    protected $table = 'product';
 
     public function discount()
     {
         return $this->belongsTo(Discount::class);
     }
 
+    public function tags()
+    {
+        return $this->belongsToMany(Tag::class, 'product_tag', 'product_id', 'tag_id');
+    }
+
+    // protected $casts = [
+    //     'color' => 'array'
+    // ];
 
     protected $fillable = [
         'product_name',
@@ -33,6 +41,10 @@ class Products extends Model
         'gallery',
         'slug',
         'status',
-        'featured'
+        'featured',
+        'barcode',
+        'slug',
+        'sku',
+        'discount'
     ];
 }

@@ -24,19 +24,23 @@ return Application::configure(basePath: dirname(__DIR__))
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,
+            \App\Http\Middleware\CorsMiddleware::class,
         ]);
 
         $middleware->alias([
             'admin' => AdminMiddleware::class,
+            \App\Http\Middleware\CorsMiddleware::class,
         ]);
 
         // ✅ Add the following for API routes to support session + CSRF
         $middleware->api(prepend: [
-            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\Http\Middleware\HandleCors::class, // ✅ FIRST
             \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class,
-            \Illuminate\Http\Middleware\HandleCors::class
+            \App\Http\Middleware\OptimizeSanctumCookies::class,
+            \App\Http\Middleware\CorsMiddleware::class,
         ]);
     })
 

@@ -14,17 +14,15 @@ use Illuminate\Support\Facades\File;
 
 class BrandController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         try {
 
-            $brandOptions = Brand::orderBy('name', 'DESC')->get();
+            $perPage = $request->get('per_page', 10);
 
-            if ($brandOptions) {
-                return response()->json($brandOptions);
-            } else {
-                return response()->json(['message' => 'No brands found, go to the brands page to add some']);
-            }
+            $brands = Brand::orderBy('name', 'DESC')->paginate($perPage);
+
+            return response()->json($brands);
         } catch (Exception $ex) {
             Log::error('error fetching brand options: ' . $ex->getMessage());
             return response()->json(['message' => 'Error fetching brands']);
@@ -45,42 +43,48 @@ class BrandController extends Controller
         ], [
             'name.required' => 'This field is required',
             'name.string' => 'Invalid input',
+
             'logo.required' => 'This field is required',
             'logo.mimes' => 'Invalid file type',
+
             'description.string' => 'Invalid input',
+
             'status.required' => 'This field is required',
             'status.in' => 'Only "Active" and "Inactive" are allowed',
-            'is_featured' => ''
         ]);
 
         DB::beginTransaction();
 
         try {
             $logoPath = null;
+            $logoFile = null;
 
             if ($request->hasFile('logo')) {
-                $file = $request->file('logo');
-
-                $uploadDir = 'brands';
-
-                // Ensure the directory exists in the public disk
-                if (!Storage::disk('public')->exists($uploadDir)) {
-                    Storage::disk('public')->makeDirectory($uploadDir, 0755, true);
-                }
-
-                $filename = Str::uuid() . '.' . $file->getClientOriginalExtension(); // Unique filename
-                $file->move($uploadDir, $filename); // Store the file
-                $logoPath = 'uploads/brands/' . $filename;
+                $logo = $request->file('logo');
+                $logoName = time() . '.' . $logo->getClientOriginalExtension();
+                $logoFile = $logo; // hold temporarily for now
             }
 
-            Brand::create([
+            // generate slug
+            $slug = Str::slug(trim($request->name));
+
+            $brand = Brand::create([
                 'name' => trim($request->name),
-                'logo' => $logoPath,
+                'logo' => '',
                 'description' => trim($request->description),
                 'status' => trim($request->status),
-                'is_featured' => $request->is_featured ? 1 : 0,
+                'is_featured' => $request->has('is_featured') ? 1 : 0,
                 'website' => trim($request->website),
+                'slug' => $slug
             ]);
+
+            if($logoFile)
+            {
+                $directory = 'brands';
+                $logoPath = $logoFile->storeAs($directory, $logoName, 'public');
+                $brand->update(['logo' => $logoPath]);
+            }
+
 
             DB::commit();
 

@@ -27,7 +27,7 @@ class CategoryController extends Controller
         $request->validate([
             'name' => ['required', 'string', 'unique:category,name'],
             'description' => ['required', 'string'],
-            'image' => ['required', 'mimes:jpg,jpeg,png,webp'],
+            'image' => ['required', 'mimes:jpg,jpeg,png,webp,avif'],
             'parent_id' => ['nullable', 'exists:categories,id'],
             'is_featured' => ['nullable'],
             'status' => ['required', 'string'],
@@ -86,6 +86,22 @@ class CategoryController extends Controller
             Log::error('An error occurred whilst saving category: ' . $ex->getMessage());
 
             return response()->json(['message' => 'An error occurred whilst saving category'], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $category = Category::find($id);
+
+            if ($category) {
+                $category->delete();
+            }
+
+            return response()->json(['message' => 'Category Deleted Successfully'], 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'Could not delete category. Try again later'], 200);
         }
     }
 }

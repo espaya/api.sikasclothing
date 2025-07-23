@@ -56,22 +56,22 @@ class AuthenticatedSessionController extends Controller
 
             $user = Auth::user();
 
-            // Agent to detect browser, platform, etc.
-            $agent = new Agent();
-            $browser = $agent->browser();
-            $platform = $agent->platform();
-            $device = $agent->device();
-            $ip = $request->ip();
-            $date = Carbon::now()->toDayDateTimeString();
+            // // Agent to detect browser, platform, etc.
+            // $agent = new Agent();
+            // $browser = $agent->browser();
+            // $platform = $agent->platform();
+            // $device = $agent->device();
+            // $ip = $request->ip();
+            // $date = Carbon::now()->toDayDateTimeString();
 
-            // Send login mail with metadata
-            Mail::to($user->email)->send(new LoginMail($user, [
-                'ip' => $ip,
-                'browser' => $browser,
-                'platform' => $platform,
-                'device' => $device,
-                'time' => $date
-            ]));
+            // // Send login mail with metadata
+            // Mail::to($user->email)->send(new LoginMail($user, [
+            //     'ip' => $ip,
+            //     'browser' => $browser,
+            //     'platform' => $platform,
+            //     'device' => $device,
+            //     'time' => $date
+            // ]));
 
             $redirectUrl = match($user->role) {
                 'USERS' => '/account',

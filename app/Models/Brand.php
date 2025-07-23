@@ -15,5 +15,6 @@ class Brand extends Model
         'status',
         'is_featured',
         'website',
+        'slug'
     ];
 }

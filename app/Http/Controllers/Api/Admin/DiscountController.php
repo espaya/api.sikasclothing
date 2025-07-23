@@ -11,12 +11,31 @@ use Illuminate\Support\Facades\Log;
 
 class DiscountController extends Controller
 {
+    public function index(Request $request)
+    {
+        $perPage = $request->get('perPage', 10);
+        $search = $request->get('search');
+
+        $query = Discount::query();
+
+        if ($search) {
+            $query->where('title', 'like', "%{$search}%")
+                ->orWhere('discount_code', 'like', "%{$search}%");
+        }
+
+        $discounts = $query->orderBy('id', 'desc')->paginate($perPage);
+
+        return response()->json($discounts);
+    }
+
+
     public function store(Request $request)
     {
         $request->validate([
             'title' => ['required', 'string', 'max:255'],
             'type' => ['required', 'in:Percentage,Fixed'],
-            'amount' => ['required', 'numeric', 'min:0'],
+            'amount' => ['nullable', 'numeric', 'min:0', 'required_if:type,Fixed'],
+            'percentage' => ['nullable', 'required_if:type,Percentage', 'regex:/^\d{1,3}%$/'],
             'minimum_order_value' => ['required', 'numeric', 'min:0'],
             'maximum_discount' => ['required_if:type,Percentage', 'nullable', 'numeric', 'min:0'],
             'discount_code' => ['required', 'string', 'max:50', 'unique:discount,discount_code'],

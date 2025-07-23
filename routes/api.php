@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\Api\AccountDetailsController;
+use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\Frontend\HomeController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -37,13 +39,20 @@ Route::middleware(['web'])->group(function () {
     // Public route
     Route::post('/contact-us', [ContactController::class, 'store']);
 
+    Route::get('/get-latest-products', [HomeController::class, 'latestProducts']);
+    Route::get('/shop-by-category', [HomeController::class, 'shopByCategory']);
+
 });
 
 Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function(){
     Route::post('/add-product', [ProductController::class, 'store']);
+    Route::get('get-product', [ProductController::class, 'index']);
     Route::post('/add-category', [CategoryController::class, 'store']);
     Route::get('/get-category', [CategoryController::class, 'index']);
     Route::post('/add-discount', [DiscountController::class, 'store']);
+    Route::get('/get-discount', [DiscountController::class, 'index']);
+    Route::post('/add-brand', [BrandController::class, 'store']);
+    Route::get('/get-brands', [BrandController::class, 'index']);
 });
 
 
