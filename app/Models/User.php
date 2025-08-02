@@ -24,6 +24,11 @@ class User extends Authenticatable
         'role'
     ];
 
+    public function cartItems()
+    {
+        return $this->hasMany(Cart::class);
+    }
+
     public function accountDetails()
     {
         return $this->hasOne(AccountDetails::class, 'userID');

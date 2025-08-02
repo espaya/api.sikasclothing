@@ -16,10 +16,15 @@ class CategoryController extends Controller
 {
     public function index(Request $request)
     {
-        $limit = $request->input('limit', 10); // default to 10
-        $categories = Category::orderBy('id', 'DESC')->paginate($limit);
+        $limit = $request->input('limit', 10);
+
+        $categories = Category::orderByRaw("slug = 'general' DESC")
+            ->orderBy('id', 'DESC')
+            ->paginate($limit);
+
         return response()->json($categories);
     }
+
 
     public function store(Request $request)
     {

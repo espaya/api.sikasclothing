@@ -13,9 +13,24 @@ class Products extends Model
         return $this->belongsTo(Discount::class);
     }
 
+    public function categories()
+    {
+        return $this->belongsToMany(Category::class, 'category_product', 'product_id', 'category_id');
+    }
+
+    public function carts()
+    {
+        return $this->hasMany(Cart::class);
+    }
+
     public function tags()
     {
         return $this->belongsToMany(Tag::class, 'product_tag', 'product_id', 'tag_id');
+    }
+
+    public function reviews()
+    {
+        return $this->hasMany(Reviews::class, 'product_id');
     }
 
     // protected $casts = [
@@ -45,6 +60,9 @@ class Products extends Model
         'barcode',
         'slug',
         'sku',
-        'discount'
+        'discount',
+        'storage',
+        'weight',
+        'dimensions'
     ];
 }

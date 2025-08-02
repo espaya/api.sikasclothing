@@ -18,6 +18,11 @@ class Category extends Model
         'status',           // 'active', 'inactive', etc.
     ];
 
+    public function products()
+    {
+        return $this->belongsToMany(Products::class, 'category_product', 'product_id', 'category_id');
+    }
+
     protected $casts = [
         'is_featured' => 'boolean',
     ];

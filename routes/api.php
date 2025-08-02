@@ -3,10 +3,12 @@
 use App\Http\Controllers\Api\AccountDetailsController;
 use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CategoryController;
+use App\Http\Controllers\Api\Admin\CustomerController;
 use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\Frontend\HomeController;
+use App\Http\Controllers\Api\ReviewsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -16,6 +18,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\BillingAddressController;
+use App\Http\Controllers\CartController;
 use App\Http\Controllers\ShippingAddressController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -38,27 +41,43 @@ Route::middleware(['web'])->group(function () {
     });
     // Public route
     Route::post('/contact-us', [ContactController::class, 'store']);
-
     Route::get('/get-latest-products', [HomeController::class, 'latestProducts']);
     Route::get('/shop-by-category', [HomeController::class, 'shopByCategory']);
+    Route::get('/shop/{slug}', [ProductController::class, 'show']);
+    Route::post('/store-reviews/{id}', [ReviewsController::class, 'store']);
 
+    // Cart routes
+    Route::get('/cart', [CartController::class, 'index']);
+    Route::post('/cart/add', [CartController::class, 'add']);
+    Route::put('/cart/update/{id}', [CartController::class, 'update']);
+    Route::delete('/cart/remove/{id}', [CartController::class, 'remove']);
+    Route::post('/cart/clear', [CartController::class, 'clear']);
+    Route::get('/cart/total', [CartController::class, 'cartTotal']);
+    Route::get('/cart/item-exists/{id}', [CartController::class, 'itemExists']);
+    Route::put('/cart/update-quantity/{id}', [CartController::class, 'updateQuantity']);
+    // get quantity
+    Route::get('/cart/get-cart/{id}', [CartController::class, 'getCart']);
 });
 
-Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function(){
+Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::get('get-product', [ProductController::class, 'index']);
+    Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']);
     Route::post('/add-category', [CategoryController::class, 'store']);
     Route::get('/get-category', [CategoryController::class, 'index']);
     Route::post('/add-discount', [DiscountController::class, 'store']);
     Route::get('/get-discount', [DiscountController::class, 'index']);
     Route::post('/add-brand', [BrandController::class, 'store']);
     Route::get('/get-brands', [BrandController::class, 'index']);
+
+    // customers
+    Route::get('/customers', [CustomerController::class, 'index']);
 });
 
 
-Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function(){
+Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
 
-    Route::get('/user', function(Request $request){
+    Route::get('/user', function (Request $request) {
         return response()->json($request->user());
     });
 
