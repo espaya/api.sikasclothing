@@ -316,7 +316,11 @@ class ProductController extends Controller
             DB::beginTransaction();
 
             try {
-                $product = Products::findOrFail($id);
+                $product = Products::find($id);
+
+                if (!$product) {
+                    return response()->json(['message' => 'Product not found!'], 404);
+                }
 
                 $alreadyInWishlist = Wishlist::where('user_id', Auth::id())
                     ->where('product_id', $id)
@@ -337,7 +341,7 @@ class ProductController extends Controller
             } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
                 DB::rollBack();
                 Log::error($e->getMessage());
-                return response()->json(['message' => 'Product not found'], 404);
+                return response()->json(['message' => 'Could not add product to wishlist'], 404);
             } catch (\Exception $ex) {
                 DB::rollBack();
                 Log::error($ex->getMessage());

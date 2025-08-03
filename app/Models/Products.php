@@ -8,6 +8,11 @@ class Products extends Model
 {
     protected $table = 'product';
 
+    public function wishlists()
+    {
+        return $this->hasMany(Wishlist::class, 'product_id'); // A product can be in many wishlists
+    }
+
     public function discount()
     {
         return $this->belongsTo(Discount::class);

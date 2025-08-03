@@ -24,6 +24,11 @@ class User extends Authenticatable
         'role'
     ];
 
+    public function wishlist()
+    {
+        return $this->hasMany(Wishlist::class);
+    }
+
     public function cartItems()
     {
         return $this->hasMany(Cart::class);
