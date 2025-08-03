@@ -45,6 +45,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/shop-by-category', [HomeController::class, 'shopByCategory']);
     Route::get('/shop/{slug}', [ProductController::class, 'show']);
     Route::post('/store-reviews/{id}', [ReviewsController::class, 'store']);
+    Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
+    Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);

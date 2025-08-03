@@ -13,18 +13,21 @@ class CustomerController extends Controller
     public function index(Request $request)
     {
         try {
-
-            $query = User::where('role', 'USER')->orderBy('id', 'DESC')->get();
+            // Start query builder, don't call get() or paginate() yet
+            $query = User::where('role', 'USER');
 
             if ($request->search) {
                 $search = trim($request->search);
-                $query->where('name', '=', "%$search")
-                    ->orWhere('email', '=', "%$search%")
-                    ->orderBy('name', 'ASC')
-                    ->paginate(10);
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'LIKE', "%$search%")
+                        ->orWhere('email', 'LIKE', "%$search%");
+                });
             }
 
-            return response()->json($query);
+            // Order and paginate
+            $users = $query->orderBy('name', 'ASC')->paginate(10);
+
+            return response()->json($users);
         } catch (Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json(['message' => 'Could not get customers. Try again later'], 500);

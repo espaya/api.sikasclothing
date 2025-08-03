@@ -5,8 +5,10 @@ namespace App\Http\Controllers\Api\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Products;
 use App\Models\Tag;
+use App\Models\Wishlist;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -41,6 +43,7 @@ class ProductController extends Controller
 
         $products = $query->orderBy('id', 'DESC')->paginate($perPage);
 
+
         return response()->json($products);
     }
 
@@ -66,8 +69,6 @@ class ProductController extends Controller
             'relatedProducts' => $relatedProducts,
         ]);
     }
-
-
 
     public function store(Request $request)
     {
@@ -252,7 +253,6 @@ class ProductController extends Controller
         return "{$brandCode}-{$productCode}-{$sizeCode}-{$random}";
     }
 
-
     public function destroy($id)
     {
         DB::beginTransaction();
@@ -306,6 +306,89 @@ class ProductController extends Controller
             return response()->json([
                 'message' => 'An error occurred. Try again later'
             ], 500);
+        }
+    }
+
+
+    public function addToWishlist($id)
+    {
+        if (Auth::check()) {
+            DB::beginTransaction();
+
+            try {
+                $product = Products::findOrFail($id);
+
+                $alreadyInWishlist = Wishlist::where('user_id', Auth::id())
+                    ->where('product_id', $id)
+                    ->exists();
+
+                if ($alreadyInWishlist) {
+                    return response()->json(['message' => 'Product is already in the wishlist']);
+                }
+
+                Wishlist::create([
+                    'user_id' => Auth::id(),
+                    'product_id' => $id
+                ]);
+
+                DB::commit();
+
+                return response()->json(['message' => 'Product added to wishlist'], 200);
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                DB::rollBack();
+                Log::error($e->getMessage());
+                return response()->json(['message' => 'Product not found'], 404);
+            } catch (\Exception $ex) {
+                DB::rollBack();
+                Log::error($ex->getMessage());
+
+                return response()->json(['message' => 'An error occurred. Try again later'], 500);
+            }
+        } else {
+            // 🔹 Guest users — store product ID in session
+            $wishlist = session()->get('guest_wishlist', []);
+
+            if (in_array($id, $wishlist)) {
+                return response()->json(['message' => 'Product is already in the wishlist']);
+            }
+
+            $product = Products::find($id);
+
+            if (!$product) {
+                return response()->json(['message' => 'Product not found'], 404);
+            }
+
+            $wishlist[] = $id;
+            session(['guest_wishlist' => $wishlist]);
+
+            return response()->json(['message' => 'Product added to wishlist'], 200);
+        }
+    }
+
+    public function checkWishlist($id)
+    {
+        if (Auth::check()) {
+            try {
+                $alreadyInWishlist = Wishlist::where('user_id', Auth::id())
+                    ->where('product_id', $id)
+                    ->exists();
+
+                Log::info($alreadyInWishlist);
+
+                return response()->json($alreadyInWishlist); // true or false
+
+            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+                Log::error($e->getMessage());
+                return response()->json(false); // Fallback as false
+            } catch (\Exception $ex) {
+                Log::error($ex->getMessage());
+                return response()->json(false); // Fallback as false
+            }
+        } else {
+            // Guest user logic
+            $wishlist = session()->get('guest_wishlist', []);
+
+            return response()->json(in_array($id, $wishlist)); // true or false
         }
     }
 }
