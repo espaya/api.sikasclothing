@@ -47,6 +47,7 @@ class ProductController extends Controller
         return response()->json($products);
     }
 
+
     public function show($slug)
     {
         $product = Products::with(['categories', 'reviews', 'tags'])->where('slug', $slug)->first();
@@ -104,6 +105,7 @@ class ProductController extends Controller
             'gallery.*' => ['file', 'mimes:jpg,jpeg,webp,png,avif', 'max:5120'],
             'status' => ['required', 'in:Published,Draft'],
             'featured' => ['nullable'],
+            'display_in_hero' => ['nullable'],
             'barcode' => ['nullable', 'string', 'unique:products,barcode'],
             'discount' => ['nullable', 'string'],
             'weight' => ['nullable', 'string'],
@@ -141,7 +143,6 @@ class ProductController extends Controller
         if ($colors->isEmpty()) {
             return back()->withErrors(['colors' => 'Please select at least one color.'])->withInput();
         }
-
 
 
         DB::beginTransaction();
@@ -205,6 +206,7 @@ class ProductController extends Controller
                 'gallery' => implode(',', $imagePaths),
                 'status' => trim($request->status),
                 'featured' => $request->featured ?? null,
+                'display_in_hero' => $request->display_in_hero ?? null,
                 'slug' => $slug,
                 'sku' => $sku,
                 'barcode' => trim($request->barcode),

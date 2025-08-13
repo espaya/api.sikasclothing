@@ -68,6 +68,7 @@ class Products extends Model
         'discount',
         'storage',
         'weight',
-        'dimensions'
+        'dimensions',
+        'display_in_hero'
     ];
 }

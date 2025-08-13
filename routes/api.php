@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CustomerController;
 use App\Http\Controllers\Api\Admin\DiscountController;
+use App\Http\Controllers\Api\Admin\HeroController;
+use App\Http\Controllers\Api\Admin\MenuController;
 use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\Customer\CustomerWishlistController;
@@ -48,6 +50,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/store-reviews/{id}', [ReviewsController::class, 'store']);
     Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
     Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
+    Route::get('/get-hero', [HeroController::class, 'index']);
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
@@ -62,7 +65,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/cart/get-cart/{id}', [CartController::class, 'getCart']);
 });
 
-Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
+Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::get('get-product', [ProductController::class, 'index']);
     Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']);
@@ -75,10 +78,15 @@ Route::middleware(['web', 'admin', EnsureFrontendRequestsAreStateful::class, 'au
 
     // customers
     Route::get('/customers', [CustomerController::class, 'index']);
+    // menus
+    Route::post('/add-menu', [MenuController::class, 'store']);
+    Route::get('/get-menus', [MenuController::class, 'index']);
+
+    Route::post('/store-hero', [HeroController::class, 'store']);
 });
 
 
-Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
+Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
 
     Route::get('/user', function (Request $request) {
         return response()->json($request->user());
@@ -92,8 +100,7 @@ Route::middleware([EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->g
     Route::post('/update-shipping-address', [ShippingAddressController::class, 'store']);
     Route::get('/get-shipping-address', [ShippingAddressController::class, 'shippingAddress']);
     Route::get('/get-wishlists', [CustomerWishlistController::class, 'index']);
-
-
+    Route::delete('/remove-from-wishlist/{id}', [CustomerWishlistController::class, 'destroy']);
 });
 
 
