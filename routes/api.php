@@ -23,6 +23,7 @@ use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\BillingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ShippingAddressController;
+use App\Http\Controllers\SpotlightController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
@@ -51,6 +52,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
     Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
     Route::get('/get-hero', [HeroController::class, 'index']);
+    Route::get('/get-spotlight-frontpage', [SpotlightController::class, 'frontpage']);
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
@@ -83,6 +85,9 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/get-menus', [MenuController::class, 'index']);
 
     Route::post('/store-hero', [HeroController::class, 'store']);
+    Route::post('/add-spotlight', [SpotlightController::class, 'store']);
+    Route::get('/get-spotlight', [SpotlightController::class, 'index']);
+    
 });
 
 
