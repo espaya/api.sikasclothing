@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountDetailsController;
 use App\Http\Controllers\Api\Admin\BrandController;
+use App\Http\Controllers\Api\Admin\CallToActionController;
 use App\Http\Controllers\Api\Admin\CategoryController;
 use App\Http\Controllers\Api\Admin\CustomerController;
 use App\Http\Controllers\Api\Admin\DiscountController;
@@ -53,6 +54,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
     Route::get('/get-hero', [HeroController::class, 'index']);
     Route::get('/get-spotlight-frontpage', [SpotlightController::class, 'frontpage']);
+    Route::get('/get-call-to-actions', [CallToActionController::class, 'index']);
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
@@ -87,7 +89,7 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::post('/store-hero', [HeroController::class, 'store']);
     Route::post('/add-spotlight', [SpotlightController::class, 'store']);
     Route::get('/get-spotlight', [SpotlightController::class, 'index']);
-    
+    Route::post('/add-call-to-action', [CallToActionController::class, 'store']);
 });
 
 
