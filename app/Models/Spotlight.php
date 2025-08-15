@@ -14,5 +14,6 @@ class Spotlight extends Model
         'link_url',
         'bg_color',
         'bg_image',
+        'add_to_megamenu'
     ];
 }

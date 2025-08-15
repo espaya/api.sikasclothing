@@ -42,6 +42,7 @@ class SpotlightController extends Controller
             'title' => ['required', 'string'],
             'link_text' => ['required', 'string'],
             'link_url' => ['required', 'url'],
+            'add_to_megamenu' => ['nullable', 'in:1'],
             'bg_color' => [
                 'nullable',
                 'string',
@@ -68,7 +69,8 @@ class SpotlightController extends Controller
             'bg_color.required_without' => 'This field is required without background image',
             'bg_color.string' => 'Invalid input',
             'bg_image.required_without' => 'This field is required without background color',
-            'bg_image.mimes' => 'Invalid image'
+            'bg_image.mimes' => 'Invalid image',
+            'add_to_megamenu.in' => 'This field contains invalid input'
         ]);
 
         DB::beginTransaction();
@@ -103,6 +105,7 @@ class SpotlightController extends Controller
                 'link_url' => $request->link_url,
                 'bg_color'  => $request->bg_color ?? "",
                 'bg_image'  => $imageFileName ?? "",
+                'add_to_megamenu' => $request->add_to_megamenu ?? "",
             ]);
 
             DB::commit();
