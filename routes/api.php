@@ -9,9 +9,12 @@ use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\HeroController;
 use App\Http\Controllers\Api\Admin\MenuController;
 use App\Http\Controllers\Api\Admin\ProductController;
+use App\Http\Controllers\Api\Admin\ShippingMethodsController;
+use App\Http\Controllers\Api\Admin\TaxRateController;
 use App\Http\Controllers\Api\ContactController;
 use App\Http\Controllers\Api\Customer\CustomerWishlistController;
 use App\Http\Controllers\Api\Frontend\HomeController;
+use App\Http\Controllers\Api\PublicTaxRateController;
 use App\Http\Controllers\Api\ReviewsController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
@@ -25,6 +28,7 @@ use App\Http\Controllers\BillingAddressController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\ShippingAddressController;
 use App\Http\Controllers\SpotlightController;
+use App\Http\Controllers\SubscriberController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful;
@@ -55,6 +59,7 @@ Route::middleware(['web'])->group(function () {
     Route::get('/get-hero', [HeroController::class, 'index']);
     Route::get('/get-spotlight-frontpage', [SpotlightController::class, 'frontpage']);
     Route::get('/get-call-to-actions', [CallToActionController::class, 'index']);
+    Route::post('/add-subscriber', [SubscriberController::class, 'store']);
 
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
@@ -67,6 +72,13 @@ Route::middleware(['web'])->group(function () {
     Route::put('/cart/update-quantity/{id}', [CartController::class, 'updateQuantity']);
     // get quantity
     Route::get('/cart/get-cart/{id}', [CartController::class, 'getCart']);
+
+    // Public Tax rate controller
+    Route::get('tax-rates', [PublicTaxRateController::class, 'index']);
+    Route::get('tax-rates/{countryCode}', [PublicTaxRateController::class, 'show']);
+    Route::post('tax-rates/{countryCode}/calculate', [PublicTaxRateController::class, 'calculate']);
+    Route::get('/get-menus', [MenuController::class, 'index']);
+    Route::get('/user-shipping-methods/get', [ShippingMethodsController::class, 'index']);
 });
 
 Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
@@ -84,12 +96,20 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/customers', [CustomerController::class, 'index']);
     // menus
     Route::post('/add-menu', [MenuController::class, 'store']);
-    Route::get('/get-menus', [MenuController::class, 'index']);
+    
+
+    Route::post('/settings/shipping-methods/add', [ShippingMethodsController::class, 'store']);
+    Route::get('/settings/shipping-methods/get', [ShippingMethodsController::class, 'index']);
 
     Route::post('/store-hero', [HeroController::class, 'store']);
     Route::post('/add-spotlight', [SpotlightController::class, 'store']);
     Route::get('/get-spotlight', [SpotlightController::class, 'index']);
     Route::post('/add-call-to-action', [CallToActionController::class, 'store']);
+
+    // Tax Rates
+    Route::apiResource('tax-rates', TaxRateController::class);
+    Route::post('tax-rates/bulk-import', [TaxRateController::class, 'bulkImport']);
+    Route::get('tax-rates/export/csv', [TaxRateController::class, 'export']);
 });
 
 
@@ -98,7 +118,7 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::get('/user', function (Request $request) {
         return response()->json($request->user());
     });
-
+    
     Route::post('/update-account-details', [AccountDetailsController::class, 'store']);
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/get-account-details', [AccountDetailsController::class, 'getAccountDetails']);
