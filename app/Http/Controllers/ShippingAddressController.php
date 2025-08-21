@@ -15,7 +15,7 @@ class ShippingAddressController extends Controller
     public function shippingAddress()
     {
         try {
-            $user = User::with('shippingAddress')->find(Auth::id());
+            $user = ShippingAddress::where('userID', Auth::id())->first();
             return response()->json($user);
         } catch (Exception $ex) {
             Log::error('Error getting billing address: ' . $ex->getMessage());
