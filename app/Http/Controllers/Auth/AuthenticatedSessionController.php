@@ -17,6 +17,7 @@ use Jenssegers\Agent\Agent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
+
 class AuthenticatedSessionController extends Controller
 {
     /**
@@ -56,6 +57,10 @@ class AuthenticatedSessionController extends Controller
 
             $user = Auth::user();
 
+            // $user->tokens()->delete();
+
+            // $token = $user->createToken('web-app')->plainTextToken;
+
             // // Agent to detect browser, platform, etc.
             // $agent = new Agent();
             // $browser = $agent->browser();
@@ -80,7 +85,7 @@ class AuthenticatedSessionController extends Controller
             };
 
             return response()->json([
-                'user' => $user,
+                'token' => $user,
                 'redirect_url' => $redirectUrl,
             ], 200);
             
