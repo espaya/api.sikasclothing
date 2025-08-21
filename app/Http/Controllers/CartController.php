@@ -220,16 +220,13 @@ class CartController extends Controller
 
     public function updateQuantity(Request $request, $id)
     {
-        Log::info($id);
-        Log::info($request->all());
-
         // Manually validate to catch and format errors
         $request->validate([
-            'product_id' => ['required', 'exists:product,id'], // Assuming table is "products"
+            // 'product_id' => ['required', 'exists:product,id'], // Assuming table is "products"
             'quantity' => ['required', 'integer', 'min:1'],
         ], [
-            'product_id.required' => 'Product is required',
-            'product_id.exists' => 'Product was not found',
+            // 'product_id.required' => 'Product is required',
+            // 'product_id.exists' => 'Product was not found',
             'quantity.required' => 'Product quantity is required',
             'quantity.integer' => 'Select the correct quantity',
             'quantity.min' => 'Quantity should be at least one(1)',
