@@ -326,10 +326,10 @@ class ProductController extends Controller
 
                 $alreadyInWishlist = Wishlist::where('user_id', Auth::id())
                     ->where('product_id', $id)
-                    ->exists();
+                    ->first();
 
                 if ($alreadyInWishlist) {
-                    return response()->json(['message' => 'Product is already in the wishlist']);
+                    return response()->json(['message' => 'Product is already in your wishlist'], 409);
                 }
 
                 Wishlist::create([
@@ -339,7 +339,7 @@ class ProductController extends Controller
 
                 DB::commit();
 
-                return response()->json(['message' => 'Product added to wishlist'], 200);
+                return response()->json(['message' => 'Product added to wishlist', 'inWishlist' => true], 200);
             } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
                 DB::rollBack();
                 Log::error($e->getMessage());
@@ -355,7 +355,7 @@ class ProductController extends Controller
             $wishlist = session()->get('guest_wishlist', []);
 
             if (in_array($id, $wishlist)) {
-                return response()->json(['message' => 'Product is already in the wishlist']);
+                return response()->json(['message' => 'Product is already in your wishlist'], 409);
             }
 
             $product = Products::find($id);
@@ -377,24 +377,19 @@ class ProductController extends Controller
             try {
                 $alreadyInWishlist = Wishlist::where('user_id', Auth::id())
                     ->where('product_id', $id)
-                    ->exists();
+                    ->exists(); // ✅ returns true/false instead of model
 
-                Log::info($alreadyInWishlist);
-
-                return response()->json($alreadyInWishlist); // true or false
-
-            } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-                Log::error($e->getMessage());
-                return response()->json(false); // Fallback as false
+                return response()->json(['inWishlist' => $alreadyInWishlist], 200);
             } catch (\Exception $ex) {
                 Log::error($ex->getMessage());
-                return response()->json(false); // Fallback as false
+                return response()->json(['inWishlist' => false], 500);
             }
         } else {
             // Guest user logic
             $wishlist = session()->get('guest_wishlist', []);
+            $inWishlist = in_array($id, $wishlist);
 
-            return response()->json(in_array($id, $wishlist)); // true or false
+            return response()->json(['inWishlist' => $inWishlist], 200);
         }
     }
 }
