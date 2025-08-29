@@ -34,7 +34,7 @@ class BillingAddressController extends Controller
             'city' => ['required', 'string'],
             'state' => ['required', 'string'],
             'zip' => ['required', 'string'],
-            'default' => ['nullable', 'boolean'], // 🔁 fixed typo: nullabe → nullable
+            'is_default' => ['nullable', 'boolean'], // 🔁 fixed typo: nullabe → nullable
             'phone' => ['required', 'string', 'regex:/^(\+?\d{1,4}[\s-]?)?(\d{7,15})$/'],
             'email' => ['required', 'email'],
         ], [
@@ -54,7 +54,7 @@ class BillingAddressController extends Controller
             'state.string' => 'Invalid inputs',
             'zip.required' => 'This field is required',
             'zip.string' => 'Invalid input',
-            'default.boolean' => 'Invalid input',
+            'is_default.boolean' => 'Invalid input',
             'phone.required' => 'This field is required',
             'phone.string' => 'Invalid inputs',
             'phone.regex' => 'Invalid phone number format',
@@ -85,7 +85,7 @@ class BillingAddressController extends Controller
                 'zip'             => htmlspecialchars(trim($request->zip), ENT_QUOTES, 'UTF-8'),
                 'phone'           => htmlspecialchars(trim($request->phone), ENT_QUOTES, 'UTF-8'),
                 'email'           => htmlspecialchars(trim($request->email), ENT_QUOTES, 'UTF-8'),
-                'default'         => $request->default, // 🧠 converts checkbox to true/false
+                'is_default'         => $request->default, // 🧠 converts checkbox to true/false
             ];
 
             // Save or update billing address

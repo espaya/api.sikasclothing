@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\Customer\CustomerWishlistController;
 use App\Http\Controllers\Api\Frontend\HomeController;
 use App\Http\Controllers\Api\PublicTaxRateController;
 use App\Http\Controllers\Api\ReviewsController;
+use App\Http\Controllers\Api\ShopPageController;
 use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\ConfirmablePasswordController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
@@ -79,6 +80,11 @@ Route::middleware(['web'])->group(function () {
     Route::post('tax-rates/{countryCode}/calculate', [PublicTaxRateController::class, 'calculate']);
     Route::get('/get-menus', [MenuController::class, 'index']);
     Route::get('/user-shipping-methods/get', [ShippingMethodsController::class, 'index']);
+
+    // shop page route
+    Route::get('shop-products', [ShopPageController::class, 'index']);
+    Route::get('shop-category', [ShopPageController::class, 'getCategory']);
+    Route::get('shop-random-category', [ShopPageController::class, 'randomCategories']);
 });
 
 Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {

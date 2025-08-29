@@ -20,7 +20,7 @@ class ProductController extends Controller
     {
         $perPage = $request->get('per_page', 10);
 
-        $query = Products::with(['reviews', 'categories'])->withCount('reviews');
+        $query = Products::with(['reviews', 'categories', 'brandRelation'])->withCount('reviews');
 
 
         if ($request->input('search')) {

@@ -34,6 +34,9 @@ class ShippingAddressController extends Controller
             'city' => ['required', 'string'],
             'state' => ['required', 'string'],
             'zip' => ['required', 'string'],
+            'is_checkout_only' => ['nullable', 'boolean'],
+            'is_default' => ['nullable', 'boolean'],
+            'id' => ['nullable', 'integer']
         ], [
             'firstname.required' => 'This field is required',
             'firstname.string' => 'Invalid inputs',
@@ -67,25 +70,42 @@ class ShippingAddressController extends Controller
 
             // Sanitize and prepare data
             $data = [
-                'firstname'       => htmlspecialchars(trim($request->firstname), ENT_QUOTES, 'UTF-8'),
-                'lastname'        => htmlspecialchars(trim($request->lastname), ENT_QUOTES, 'UTF-8'),
-                'company_name'    => htmlspecialchars(trim($request->company_name ?? ''), ENT_QUOTES, 'UTF-8'),
-                'country'         => htmlspecialchars(trim($request->country), ENT_QUOTES, 'UTF-8'),
-                'address_line_1'  => htmlspecialchars(trim($request->address_line_1), ENT_QUOTES, 'UTF-8'),
-                'address_line_2'  => htmlspecialchars(trim($request->address_line_2 ?? ''), ENT_QUOTES, 'UTF-8'),
-                'city'            => htmlspecialchars(trim($request->city), ENT_QUOTES, 'UTF-8'),
-                'state'           => htmlspecialchars(trim($request->state), ENT_QUOTES, 'UTF-8'),
-                'zip'             => htmlspecialchars(trim($request->zip), ENT_QUOTES, 'UTF-8'),
+                'firstname'         => htmlspecialchars(trim($request->firstname), ENT_QUOTES, 'UTF-8'),
+                'lastname'          => htmlspecialchars(trim($request->lastname), ENT_QUOTES, 'UTF-8'),
+                'company_name'      => htmlspecialchars(trim($request->company_name ?? ''), ENT_QUOTES, 'UTF-8'),
+                'country'           => htmlspecialchars(trim($request->country), ENT_QUOTES, 'UTF-8'),
+                'address_line_1'    => htmlspecialchars(trim($request->address_line_1), ENT_QUOTES, 'UTF-8'),
+                'address_line_2'    => htmlspecialchars(trim($request->address_line_2 ?? ''), ENT_QUOTES, 'UTF-8'),
+                'city'              => htmlspecialchars(trim($request->city), ENT_QUOTES, 'UTF-8'),
+                'state'             => htmlspecialchars(trim($request->state), ENT_QUOTES, 'UTF-8'),
+                'zip'               => htmlspecialchars(trim($request->zip), ENT_QUOTES, 'UTF-8'),
+                'is_checkout_only'  => $request->boolean('is_checkout_only', false),
+                'is_default'        => $request->boolean('is_default', false),
+                'userID'            => $userID,
             ];
 
-            ShippingAddress::updateOrCreate(
-                ['userID' => $userID],
-                $data
-            );
+            // Check if this is being saved as default, unset otheres
+            if ($data['is_default']) {
+                ShippingAddress::where('userID', $userID)->update(['is_default' => false]);
+            }
+
+            if ($request->id) {
+                $address = ShippingAddress::where('id', $request->id)->where('userID', $userID)->firstOrFail();
+
+                // update new data
+                $address->fill($data);
+                if ($address->isDirty()) $address->save();
+            } else {
+                ShippingAddress::create($data);
+            }
 
             DB::commit();
 
-            return response()->json(['message' => 'Shipping address updated successfully.'], 200);
+            return response()->json([
+                'message' => $data['is_checkout_only']
+                    ? 'Temporary shipping address added for this order'
+                    : 'Shipping address updated successfully.'
+            ], 200);
         } catch (\Exception $ex) {
             DB::rollBack();
             Log::error('An error occurred whilst saving shipping address: ' . $ex->getMessage());

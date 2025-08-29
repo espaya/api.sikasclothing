@@ -8,6 +8,41 @@ class Products extends Model
 {
     protected $table = 'product';
 
+    protected $fillable = [
+        'product_name',
+        'category',
+        'sku',
+        'tags',
+        'gender',
+        'brand',
+        'description',
+        'price',
+        'sale_price',
+        'stock_quantity',
+        'stock_status',
+        'color',
+        'material',
+        'fit_type',
+        'size',
+        'gallery',
+        'slug',
+        'status',
+        'featured',
+        'barcode',
+        'slug',
+        'sku',
+        'discount',
+        'storage',
+        'weight',
+        'dimensions',
+        'display_in_hero'
+    ];
+
+    public function brandRelation()
+    {
+        return $this->belongsTo(Brand::class, 'brand', 'id');
+    }
+
     public function wishlists()
     {
         return $this->hasMany(Wishlist::class, 'product_id'); // A product can be in many wishlists
@@ -42,33 +77,5 @@ class Products extends Model
     //     'color' => 'array'
     // ];
 
-    protected $fillable = [
-        'product_name',
-        'category',
-        'sku',
-        'tags',
-        'gender',
-        'brand',
-        'description',
-        'price',
-        'sale_price',
-        'stock_quantity',
-        'stock_status',
-        'color',
-        'material',
-        'fit_type',
-        'size',
-        'gallery',
-        'slug',
-        'status',
-        'featured',
-        'barcode',
-        'slug',
-        'sku',
-        'discount',
-        'storage',
-        'weight',
-        'dimensions',
-        'display_in_hero'
-    ];
+    
 }

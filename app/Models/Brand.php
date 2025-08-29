@@ -17,4 +17,9 @@ class Brand extends Model
         'website',
         'slug'
     ];
+
+    public function product()
+    {
+        return $this->belongsTo(Products::class, 'brand', 'id');
+    }
 }

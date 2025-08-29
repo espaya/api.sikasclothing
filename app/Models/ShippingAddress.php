@@ -18,6 +18,8 @@ class ShippingAddress extends Model
         'city',
         'state',
         'zip',
-        'userID'
+        'userID',
+        'is_default',
+        'is_checkout_only'
     ];
 }

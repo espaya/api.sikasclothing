@@ -20,7 +20,7 @@ class BillingAddress extends Model
         'zip',
         'phone',
         'email',
-        'default',
+        'is_default',
         'userID'
     ];
 
