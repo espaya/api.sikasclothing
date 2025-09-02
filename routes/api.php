@@ -132,6 +132,7 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::get('/get-billing-address', [BillingAddressController::class, 'billingAddress']);
     Route::post('/update-shipping-address', [ShippingAddressController::class, 'store']);
     Route::get('/get-shipping-address', [ShippingAddressController::class, 'shippingAddress']);
+    Route::get('/get-single-shipping-address/{id}', [ShippingAddressController::class, 'singleAddress']);
     Route::get('/get-wishlists', [CustomerWishlistController::class, 'index']);
     Route::delete('/remove-from-wishlist/{id}', [CustomerWishlistController::class, 'destroy']);
 });

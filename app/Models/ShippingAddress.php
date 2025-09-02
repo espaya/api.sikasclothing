@@ -20,6 +20,8 @@ class ShippingAddress extends Model
         'zip',
         'userID',
         'is_default',
-        'is_checkout_only'
+        'is_checkout_only',
+        'phone',
+        'email'
     ];
 }
