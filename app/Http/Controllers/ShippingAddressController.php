@@ -9,13 +9,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
+
 
 class ShippingAddressController extends Controller
 {
     public function shippingAddress()
     {
         try {
-            $user = ShippingAddress::where('userID', Auth::id())->first();
+            $user = ShippingAddress::where('userID', Auth::id())->get();
+            return response()->json($user);
+        } catch (Exception $ex) {
+            Log::error('Error getting billing address: ' . $ex->getMessage());
+        }
+    }
+
+    public function singleAddress($id)
+    {
+        try {
+            $user = ShippingAddress::where('userID', Auth::id())->where('id', $id)->first();
             return response()->json($user);
         } catch (Exception $ex) {
             Log::error('Error getting billing address: ' . $ex->getMessage());
@@ -24,6 +36,8 @@ class ShippingAddressController extends Controller
 
     public function store(Request $request)
     {
+        $userID = Auth::id();
+
         $request->validate([
             'firstname' => ['required', 'string'],
             'lastname' => ['required', 'string'],
@@ -36,7 +50,19 @@ class ShippingAddressController extends Controller
             'zip' => ['required', 'string'],
             'is_checkout_only' => ['nullable', 'boolean'],
             'is_default' => ['nullable', 'boolean'],
-            'id' => ['nullable', 'integer']
+            'id' => ['nullable', 'integer'],
+
+            'phone' => [
+                'required',
+                'regex:/^\+?[0-9\s\-\(\)]{7,20}$/',
+                Rule::unique('shipping_address', 'phone')->ignore($userID, 'userID')
+            ], // <- ignores current record],
+
+            'email' => [
+                'required',
+                'email',
+                Rule::unique('shipping_address', 'email')->ignore($userID, 'userID') // <- ignores current record
+            ]
         ], [
             'firstname.required' => 'This field is required',
             'firstname.string' => 'Invalid inputs',
@@ -54,9 +80,11 @@ class ShippingAddressController extends Controller
             'state.string' => 'Invalid inputs',
             'zip.required' => 'This field is required',
             'zip.string' => 'Invalid input',
+            'phone.required' => 'This field is required',
+            'phone.regex' => 'Invalid phone number',
+            'email.required' => 'This field is required',
+            'email.email' => 'Invalid email'
         ]);
-
-        $userID = Auth::id();
 
         if (!$userID) {
             return response()->json([
@@ -82,6 +110,8 @@ class ShippingAddressController extends Controller
                 'is_checkout_only'  => $request->boolean('is_checkout_only', false),
                 'is_default'        => $request->boolean('is_default', false),
                 'userID'            => $userID,
+                'phone'             => trim($request->phone),
+                'email'             => trim($request->email),
             ];
 
             // Check if this is being saved as default, unset otheres

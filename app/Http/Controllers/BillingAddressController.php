@@ -15,7 +15,7 @@ class BillingAddressController extends Controller
     public function billingAddress()
     {
         try {
-            $user = User::with('billingAddress')->find(Auth::id());
+            $user = BillingAddress::where('userID', Auth::id())->first();
             return response()->json($user);
         } catch (Exception $ex) {
             Log::error('Error getting billing address: ' . $ex->getMessage());
