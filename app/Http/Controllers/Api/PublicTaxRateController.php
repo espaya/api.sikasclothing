@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TaxRate;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class PublicTaxRateController extends Controller
 {
@@ -20,7 +21,12 @@ class PublicTaxRateController extends Controller
 
         $stateCode = $request->query('state_code');
 
-        $taxRate = TaxRate::getForLocation($countryCode, $stateCode);
+        // Cache per country+state
+        $cacheKey = "tax_rate_{$countryCode}_" . ($stateCode ?? 'all');
+
+        $taxRate = Cache::remember($cacheKey, 3600, function () use ($countryCode, $stateCode) {
+            return TaxRate::getForLocation($countryCode, $stateCode);
+        });
 
         if (!$taxRate) {
             return response()->json([
@@ -58,7 +64,12 @@ class PublicTaxRateController extends Controller
         $amount = $request->amount;
         $stateCode = $request->query('state_code');
 
-        $taxRate = TaxRate::getForLocation($countryCode, $stateCode);
+        // Cache key includes country+state
+        $cacheKey = "tax_rate_{$countryCode}_" . ($stateCode ?? 'all');
+
+        $taxRate = Cache::remember($cacheKey, 3600, function () use ($countryCode, $stateCode) {
+            return TaxRate::getForLocation($countryCode, $stateCode);
+        });
 
         if (!$taxRate) {
             return response()->json([
@@ -93,20 +104,26 @@ class PublicTaxRateController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = TaxRate::active()
-            ->select(['country', 'country_code', 'state_code', 'tax_name', 'tax_type', 'rate'])
-            ->orderBy('country')
-            ->orderBy('state_code');
+        $search = $request->filled('search') ? $request->search : null;
 
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('country', 'like', "%{$search}%")
-                    ->orWhere('country_code', 'like', "%{$search}%");
-            });
-        }
+        // Cache key depends on search
+        $cacheKey = "tax_rates_list_" . ($search ?? 'all');
 
-        $taxRates = $query->get();
+        $taxRates = Cache::remember($cacheKey, 3600, function () use ($search) {
+            $query = TaxRate::active()
+                ->select(['country', 'country_code', 'state_code', 'tax_name', 'tax_type', 'rate'])
+                ->orderBy('country')
+                ->orderBy('state_code');
+
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('country', 'like', "%{$search}%")
+                        ->orWhere('country_code', 'like', "%{$search}%");
+                });
+            }
+
+            return $query->get();
+        });
 
         return response()->json([
             'data' => $taxRates

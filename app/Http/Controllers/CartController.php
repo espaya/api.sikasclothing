@@ -11,6 +11,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+
 
 class CartController extends Controller
 {
@@ -20,7 +22,11 @@ class CartController extends Controller
 
         try {
             if ($user) {
-                $cartItems = $user->cartItems()->with('product')->orderBy('id', 'DESC')->get();
+                $cartItems = Cache::remember(
+                    "cart_user_{$user->id}", // unique key per user
+                    60, // cache for 60 seconds (you can increase)
+                    fn() => $user->cartItems()->with('product')->orderBy('id', 'DESC')->get()
+                );
             } else {
                 $cartItems = collect(session('cart', []));
             }
@@ -36,6 +42,7 @@ class CartController extends Controller
             ], 500);
         }
     }
+
 
     public function add(Request $request)
     {
@@ -72,6 +79,7 @@ class CartController extends Controller
             $product = Products::find($request->product_id);
 
             if ($user) {
+                Cache::forget("cart_user_{$user->id}");
                 // Check if item already in cart
                 $cartItem = $user->cartItems()->where('product_id', $product->id)->first();
 
@@ -167,6 +175,8 @@ class CartController extends Controller
                 if (!empty($updates)) {
                     $cartItem->update($updates);
                     DB::commit();
+                    Cache::forget("cart_user_{$user->id}");
+
                     return response()->json([
                         'message' => 'Cart updated successfully',
                         'cart' => $this->index($request)->getData()
@@ -258,6 +268,8 @@ class CartController extends Controller
                     $cartItem->update($updates);
                     DB::commit();
 
+                    Cache::forget("cart_user_{$user->id}");
+
                     return response()->json([
                         'message' => 'Cart updated successfully',
                         'cart' => $this->index($request)->getData()
@@ -347,6 +359,7 @@ class CartController extends Controller
                 $item = $user->cartItems()->find($id);
                 if ($item) {
                     $item->delete();
+                    Cache::forget("cart_user_{$user->id}");
                 }
                 return $this->index($request);
             } catch (Exception $ex) {
@@ -372,6 +385,8 @@ class CartController extends Controller
             try {
                 $user->cartItems()->delete();
                 DB::commit();
+                Cache::forget("cart_user_{$user->id}");
+
                 return response()->json(['message' => 'Cart cleared'], 200);
             } catch (Exception $ex) {
                 DB::rollBack();

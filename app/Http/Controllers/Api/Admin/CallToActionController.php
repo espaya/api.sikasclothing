@@ -8,13 +8,17 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class CallToActionController extends Controller
 {
     public function index()
     {
         try {
-            $callToActions = CallToAction::orderBy('id', 'DESC')->get();
+            // Cache results for 1 hour
+            $callToActions = Cache::remember('call_to_actions', 3600, function () {
+                return CallToAction::orderBy('id', 'DESC')->get();
+            });
 
             if ($callToActions->isEmpty()) {
                 return response()->json(['message' => 'No call to actions found']);
@@ -78,6 +82,9 @@ class CallToActionController extends Controller
             ]);
 
             DB::commit();
+
+            // Invalidate cache when new record is added
+            Cache::forget('call_to_actions');
 
             return response()->json(['message' => 'Call to action created successfully']);
         } catch (\Exception $ex) {

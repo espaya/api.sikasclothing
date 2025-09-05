@@ -8,21 +8,24 @@ use App\Models\Menu;
 use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class MenuController extends Controller
 {
     public function index()
     {
         try {
-            // Get only top-level menus (parent_id is null or 0) with children
-            $menus = Menu::with(['category', 'childrenRecursive'])
-                ->where(function ($q) {
-                    $q->whereNull('parent_id')
-                        ->orWhere('parent_id', 0);
-                })
-                ->where('is_active', 1)
-                ->orderBy('order')
-                ->get();
+            // Cache menus for 10 minutes (600 seconds)
+            $menus = Cache::remember('menus_with_children', 600, function () {
+                return Menu::with(['category', 'childrenRecursive'])
+                    ->where(function ($q) {
+                        $q->whereNull('parent_id')
+                            ->orWhere('parent_id', 0);
+                    })
+                    ->where('is_active', 1)
+                    ->orderBy('order')
+                    ->get();
+            });
 
             if ($menus->isEmpty()) {
                 return response()->json([
@@ -103,6 +106,7 @@ class MenuController extends Controller
             }
         }
 
+        Cache::forget('menus_with_children'); // Clear cache
 
         return response()->json([
             'message' => 'Menu created successfully!',
@@ -121,6 +125,7 @@ class MenuController extends Controller
             }
 
             $menu->delete();
+            Cache::forget('menus_with_children'); // Clear cache
 
             return response()->json(['message' => 'Menu deleted successfully'], 200);
         } catch (Exception $ex) {

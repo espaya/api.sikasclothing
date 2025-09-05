@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\Customer;
 
 use App\Http\Controllers\Controller;
 use App\Models\Products;
+use App\Models\Wishlist;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -21,13 +22,11 @@ class CustomerWishlistController extends Controller
 
             $user = Auth::user();
 
-            $wishlists = $user->wishlist()
-                ->with(['product.categories'])
+            $wishlists = Wishlist::with(['product.categories'])
+                ->where('user_id', $user->id)
                 ->orderBy('id', 'DESC')
                 ->paginate(10);
-
-
-            return response()->json($wishlists);
+            return response()->json($wishlists, 200);
         } catch (\Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An error occurred. Please try again later.'], 500);
@@ -41,9 +40,7 @@ class CustomerWishlistController extends Controller
                 return response()->json(['message' => 'Unauthorized'], 401);
             }
 
-            $user = Auth::user();
-
-            $wishlist = $user->wishlist()->where('product_id', $id)->first();
+            $wishlist = Wishlist::where('product_id', $id)->first();
 
             if (!$wishlist) {
                 return response()->json(['message' => 'Product not found in your wishlist'], 404);

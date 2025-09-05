@@ -3,35 +3,36 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Products;
 use App\Models\Reviews;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 
 class ReviewsController extends Controller
 {
-
     public function store(Request $request, $id)
     {
         $request->validate([
             'name' => ['required', 'string'],
             'email' => ['required', 'email'],
             'rating' => ['required'],
-            'remember' => ['nullable', 'in:1'],
-            'review' => ['nullable', 'string']
+            'review' => ['nullable', 'string'],
         ], [
             'name.required' => 'This field is required',
             'name.string' => 'Invalid inputs',
             'email.required' => 'This field is required',
             'email.email' => 'Invalid email address',
-            'remember.in' => 'Invalid input',
             'review.string' => 'Invalid inputs'
         ]);
 
         DB::beginTransaction();
 
-        if (!$id) {
+        $product = Products::find($id);
+
+        if (!$product) {
             return response()->json([
                 'message' => 'Product Not Found!'
             ], 404);
@@ -42,13 +43,15 @@ class ReviewsController extends Controller
                 'name' => trim($request->name),
                 'email' => trim($request->email),
                 'rating' => trim($request->rating),
-                'remember' => trim($request->remember),
                 'review' => trim($request->review),
-                'product_id' => trim($id),
+                'product_id' => trim($request->product_id),
                 'status' => 'pending',
             ]);
 
             DB::commit();
+
+            // ❌ Invalidate cached reviews for this product
+            Cache::forget("product_reviews_{$id}");
 
             return response()->json([
                 'message' => 'Your review submitted successfully'
@@ -60,5 +63,20 @@ class ReviewsController extends Controller
                 'message' => 'An error occurred whilst saving your review. Try again later'
             ], 500);
         }
+    }
+
+    // ✅ Example: Get reviews for a product (cached)
+    public function getReviews($productId)
+    {
+        $cacheKey = "product_reviews_{$productId}";
+
+        $reviews = Cache::remember($cacheKey, 600, function () use ($productId) {
+            return Reviews::where('product_id', $productId)
+                ->where('status', 'approved') // only approved reviews
+                ->orderBy('id', 'DESC')
+                ->get();
+        });
+
+        return response()->json($reviews);
     }
 }

@@ -13,62 +13,82 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
+
 
 class ProductController extends Controller
 {
     public function index(Request $request)
     {
         $perPage = $request->get('per_page', 10);
+        $search = $request->input('search');
 
-        $query = Products::with(['reviews', 'categories', 'brandRelation'])->withCount('reviews');
+        // cache key should depend on search and pagination
+        $cacheKey = 'products_index_' . md5(json_encode([
+            'per_page' => $perPage,
+            'search'   => $search,
+            'page'     => $request->get('page', 1)
+        ]));
 
+        $products = Cache::remember($cacheKey, 600, function () use ($search, $perPage) {
+            $query = Products::with(['reviews', 'categories', 'brandRelation'])->withCount('reviews');
 
-        if ($request->input('search')) {
-            $search = trim($request->input('search'));
+            if ($search) {
+                $search = trim($search);
+                $query->where(function ($q) use ($search) {
+                    $q->where('product_name', 'LIKE', "%$search%")
+                        ->orWhere('gender', 'LIKE', "%$search%")
+                        ->orWhere('brand', 'LIKE', "%$search%")
+                        ->orWhere('price', 'LIKE', "%$search%")
+                        ->orWhere('sale_price', 'LIKE', "%$search%")
+                        ->orWhere('status', 'LIKE', "%$search%")
+                        ->orWhere('color', 'LIKE', "%$search%")
+                        ->orWhere('material', 'LIKE', "%$search%")
+                        ->orWhere('fit_type', 'LIKE', "%$search%")
+                        ->orWhere('size', 'LIKE', "%$search%")
+                        ->orWhere('discount', 'LIKE', "%$search%");
+                });
+            }
 
-            $query->where(function ($q) use ($search) {
-                $q->where('product_name', 'LIKE', "%$search%")
-                    ->orWhere('gender', 'LIKE', "%$search%")
-                    ->orWhere('brand', 'LIKE', "%$search%")
-                    ->orWhere('price', 'LIKE', "%$search%")
-                    ->orWhere('sale_price', 'LIKE', "%$search%")
-                    ->orWhere('status', 'LIKE', "%$search%")
-                    ->orWhere('color', 'LIKE', "%$search%")
-                    ->orWhere('material', 'LIKE', "%$search%")
-                    ->orWhere('fit_type', 'LIKE', "%$search%")
-                    ->orWhere('size', 'LIKE', "%$search%")
-                    ->orWhere('discount', 'LIKE', "%$search%");
-            });
-        }
-
-        $products = $query->orderBy('id', 'DESC')->paginate($perPage);
-
+            return $query->orderBy('id', 'DESC')->paginate($perPage);
+        });
 
         return response()->json($products);
     }
 
-
     public function show($slug)
     {
-        $product = Products::with(['categories', 'reviews', 'tags'])->where('slug', $slug)->first();
+        $cacheKey = "product_show_{$slug}";
 
-        if (!$product) {
+        $data = Cache::remember($cacheKey, 600, function () use ($slug) {
+            $product = Products::with(['categories', 'tags', 'reviews'])
+                ->where('slug', $slug)
+                ->first();
+
+
+            if (!$product) {
+                return null;
+            }
+
+            $relatedProducts = Products::where('id', '!=', $product->id)
+                ->whereHas('categories', function ($query) use ($product) {
+                    $query->whereIn('category_id', $product->categories->pluck('id'));
+                })
+                ->with(['categories', 'tags'])
+                ->take(4)
+                ->get();
+
+            return [
+                'product' => $product,
+                'relatedProducts' => $relatedProducts,
+            ];
+        });
+
+        if (!$data) {
             return response()->json(['message' => 'Product not found'], 404);
         }
 
-        // Fetch related products: sharing at least one category, excluding current product
-        $relatedProducts = Products::where('id', '!=', $product->id)
-            ->whereHas('categories', function ($query) use ($product) {
-                $query->whereIn('category_id', $product->categories->pluck('id'));
-            })
-            ->with(['categories', 'tags'])
-            ->take(4)
-            ->get();
-
-        return response()->json([
-            'product' => $product,
-            'relatedProducts' => $relatedProducts,
-        ]);
+        return response()->json($data);
     }
 
     public function store(Request $request)
@@ -221,6 +241,8 @@ class ProductController extends Controller
 
             DB::commit();
 
+            Cache::flush(); // Or be more specific if needed
+
             return response()->json(['message' => 'Product added successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
@@ -257,60 +279,28 @@ class ProductController extends Controller
 
     public function destroy($id)
     {
-        DB::beginTransaction();
-
         try {
-            $product = Products::with(['categories', 'tags', 'reviews'])->find($id);
+            DB::beginTransaction();
 
+            $product = Products::find($id);
             if (!$product) {
-                return response()->json([
-                    'message' => 'Product not found!'
-                ], 404);
+                return response()->json(['message' => 'Product not found!'], 404);
             }
 
-            // Delete images
-            if ($product->gallery && file_exists(public_path('storage/' . $product->gallery))) {
-                unlink(public_path('storage/' . $product->gallery));
-            }
-
-            // If gallery is stored as array or JSON
-            if (!empty($product->gallery)) {
-                $gallery = is_array($product->gallery) ? $product->gallery : json_decode($product->gallery, true);
-
-                if (is_array($gallery)) {
-                    foreach ($gallery as $image) {
-                        $imagePath = public_path('storage/' . $image);
-                        if (file_exists($imagePath)) {
-                            unlink($imagePath);
-                        }
-                    }
-                }
-            }
-
-
-            // 2. Detach categories and tags (pivot tables)
-            $product->categories()->detach();
-            $product->tags()->detach();
-
-            // 3. Delete reviews
-            $product->reviews()->delete();
-
-            // 4. Delete product
             $product->delete();
 
             DB::commit();
 
-            return response()->json([
-                'message' => 'Product deleted successfully'
-            ], 200);
+            // Clear related cache
+            Cache::flush(); // (or use Cache::forget('product_show_'.$product->slug))
+
+            return response()->json(['message' => 'Product deleted successfully'], 200);
         } catch (Exception $ex) {
+            DB::rollBack();
             Log::error($ex->getMessage());
-            return response()->json([
-                'message' => 'An error occurred. Try again later'
-            ], 500);
+            return response()->json(['message' => 'An error occurred. Try again later'], 500);
         }
     }
-
 
     public function addToWishlist($id)
     {

@@ -7,13 +7,16 @@ use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
 class SpotlightController extends Controller
 {
     public function index()
     {
-        $spotlights = Spotlight::orderBy('id', 'DESC')->get();
+        $spotlights = Cache::remember('spotlights_all', 3600, function () {
+            return Spotlight::orderBy('id', 'DESC')->get();
+        });
 
         if ($spotlights->isEmpty()) {
             return response()->json(['message' => 'No Spotlights found'], 404);
@@ -24,9 +27,11 @@ class SpotlightController extends Controller
 
     public function frontpage()
     {
-        $spotlights = Spotlight::orderBy('id', 'DESC')
-            ->limit(3)
-            ->get();
+        $spotlights = Cache::remember('spotlights_frontpage', 3600, function () {
+            return Spotlight::orderBy('id', 'DESC')
+                ->limit(3)
+                ->get();
+        });
 
         if ($spotlights->isEmpty()) {
             return response()->json(['message' => 'No Spotlights found'], 404);
@@ -34,7 +39,6 @@ class SpotlightController extends Controller
 
         return response()->json($spotlights);
     }
-
 
     public function store(Request $request)
     {
@@ -57,13 +61,12 @@ class SpotlightController extends Controller
                 },
                 'required_without:bg_image',
             ],
-
             'bg_image' => ['nullable', 'mimes:jpg,jpeg,png,webp,avif', 'required_without:bg_color'],
         ], [
             'title.required' => 'This field is required',
             'title.string' => 'Invalid input',
             'link_text.required' => 'This field is required',
-            'link_text.string' => 'INvalid input',
+            'link_text.string' => 'Invalid input',
             'link_url.required' => 'This field is required',
             'link_url.url' => 'Invalid url/link',
             'bg_color.required_without' => 'This field is required without background image',
@@ -76,7 +79,6 @@ class SpotlightController extends Controller
         DB::beginTransaction();
 
         try {
-
             $imageFileName = null;
 
             if ($request->hasFile('bg_image')) {
@@ -93,11 +95,7 @@ class SpotlightController extends Controller
 
                 // Store in public disk under "spotlight"
                 $image->storeAs('spotlight', $imageFileName, 'public');
-
-                // Save filename in DB
-                $bgImageName = $imageFileName;
             }
-
 
             Spotlight::create([
                 'title' => $request->title,
@@ -109,6 +107,10 @@ class SpotlightController extends Controller
             ]);
 
             DB::commit();
+
+            // Clear caches so fresh data is fetched next time
+            Cache::forget('spotlights_all');
+            Cache::forget('spotlights_frontpage');
 
             return response()->json(['message' => 'Spotlight created successfully']);
         } catch (Exception $ex) {
