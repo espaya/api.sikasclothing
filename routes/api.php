@@ -12,6 +12,7 @@ use App\Http\Controllers\Api\Admin\ProductController;
 use App\Http\Controllers\Api\Admin\ShippingMethodsController;
 use App\Http\Controllers\Api\Admin\TaxRateController;
 use App\Http\Controllers\Api\ContactController;
+use App\Http\Controllers\Api\Customer\CheckoutController;
 use App\Http\Controllers\Api\Customer\CustomerWishlistController;
 use App\Http\Controllers\Api\Frontend\HomeController;
 use App\Http\Controllers\Api\PublicTaxRateController;
@@ -135,6 +136,9 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::get('/get-single-shipping-address/{id}', [ShippingAddressController::class, 'singleAddress']);
     Route::get('/get-wishlists', [CustomerWishlistController::class, 'index']);
     Route::delete('/remove-from-wishlist/{id}', [CustomerWishlistController::class, 'destroy']);
+    Route::post('/place-order', [CheckoutController::class, 'store']);
+    Route::get('/get-single-order/{id}', [CheckoutController::class, 'getOrderSingle']);
+    Route::get('/all-orders', [CheckoutController::class, 'allOrders']);
 });
 
 

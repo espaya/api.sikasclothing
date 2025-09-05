@@ -35,7 +35,8 @@ class Products extends Model
         'storage',
         'weight',
         'dimensions',
-        'display_in_hero'
+        'display_in_hero',
+        'total_sold'
     ];
 
     public function brandRelation()
@@ -70,12 +71,14 @@ class Products extends Model
 
     public function reviews()
     {
-        return $this->hasMany(Reviews::class, 'product_id');
+        return $this->hasMany(Reviews::class, 'product_id', 'id')
+            ->where('status', 'approved'); // only approved reviews
     }
+
 
     // protected $casts = [
     //     'color' => 'array'
     // ];
 
-    
+
 }

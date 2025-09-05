@@ -12,7 +12,6 @@ class Reviews extends Model
         'name',
         'email',
         'rating',
-        'remember',
         'review',
         'product_id',
         'status'
