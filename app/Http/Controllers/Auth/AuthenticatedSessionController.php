@@ -16,6 +16,8 @@ use Inertia\Response;
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
+use Laravel\Sanctum\PersonalAccessToken;
+
 
 
 class AuthenticatedSessionController extends Controller
@@ -47,8 +49,7 @@ class AuthenticatedSessionController extends Controller
             'password.string' => 'Invalid input'
         ]);
 
-        try 
-        {
+        try {
             if (!Auth::attempt($request->only('email', 'password'), true)) {
                 return response()->json(['error' => 'Invalid credentials'], 401);
             }
@@ -78,7 +79,7 @@ class AuthenticatedSessionController extends Controller
             //     'time' => $date
             // ]));
 
-            $redirectUrl = match($user->role) {
+            $redirectUrl = match ($user->role) {
                 'USERS' => '/account',
                 'ADMIN' => '/sc-dashboard',
                 default => '/login'
@@ -88,10 +89,7 @@ class AuthenticatedSessionController extends Controller
                 'token' => $user,
                 'redirect_url' => $redirectUrl,
             ], 200);
-            
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             Log::error($ex->getMessage());
             return response()->json([
                 'error' => $ex->getMessage()
@@ -101,10 +99,10 @@ class AuthenticatedSessionController extends Controller
 
     // app/Http/Requests/Auth/LoginRequest.php
 
-        public function authenticated(Request $request, $user)
-        {
-            // Do nothing — this stops it from redirecting
-        }
+    public function authenticated(Request $request, $user)
+    {
+        // Do nothing — this stops it from redirecting
+    }
 
 
     /**
@@ -112,11 +110,20 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request)
     {
-        Auth::logout();
+        $guard = Auth::getDefaultDriver();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // If the user is logged in via session (web guard)
+        if ($guard === 'web') {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
-        return response()->json(['message' => 'Logged out']);
+        // If logged in via API token (Sanctum tokens)
+        if ($request->user() && $request->user()->currentAccessToken() instanceof PersonalAccessToken) {
+            $request->user()->currentAccessToken()->delete();
+        }
+
+        return response()->json(['message' => 'Logged out successfully']);
     }
 }
