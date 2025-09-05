@@ -63,6 +63,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/get-call-to-actions', [CallToActionController::class, 'index']);
     Route::post('/add-subscriber', [SubscriberController::class, 'store']);
 
+    Route::get('/best-selling', [HomeController::class, 'bestSelling']);
+
     // Cart routes
     Route::get('/cart', [CartController::class, 'index']);
     Route::post('/cart/add', [CartController::class, 'add']);

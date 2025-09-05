@@ -75,6 +75,13 @@ class Products extends Model
             ->where('status', 'approved'); // only approved reviews
     }
 
+    // In Products model
+    public function orderItems()
+    {
+        return $this->hasMany(OrderItem::class, 'product_id');
+    }
+
+
 
     // protected $casts = [
     //     'color' => 'array'
