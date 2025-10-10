@@ -1,30 +1,44 @@
-name: 🚀 Deploy to Namecheap Hosting
+name: 🚀 Deploy Laravel API to Namecheap Hosting
 
 on:
   push:
     branches:
-      - main  # or 'master' — adjust if your main branch is different
+      - main # or 'master'
 
 jobs:
-  build-and-deploy:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: 🛎️ Checkout repository
+      - name: 🧩 Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🧩 Set up Node.js
-        uses: actions/setup-node@v4
+      - name: ⚙️ Setup PHP
+        uses: shivammathur/setup-php@v2
         with:
-          node-version: 18
+          php-version: '8.2'
+          extensions: mbstring, bcmath, intl, mysql
+          coverage: none
 
-      - name: 📦 Install dependencies
-        run: npm install
+      - name: 📦 Install Composer dependencies
+        run: composer install --no-dev --optimize-autoloader
 
-      - name: 🏗️ Build project
-        run: npm run build
+      - name: ⚙️ Optimize Laravel
+        run: |
+          php artisan config:cache
+          php artisan route:cache
+          php artisan view:cache
 
-      - name: 📤 Upload build files to server
+      - name: 🧹 Clean up unnecessary files before deploy
+        run: |
+          rm -rf node_modules
+          rm -rf tests
+          rm -rf .github
+          rm -rf .git
+          rm -rf storage/logs/*.log
+          rm -rf bootstrap/cache/*.php
+
+      - name: 📤 Deploy to Namecheap via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
@@ -32,6 +46,6 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
           protocol: ftp
-          local-dir: ./ 
-          
-         
+          local-dir: ./ # Upload all Laravel files
+          server-dir: ${{ secrets.FTP_TARGET_DIR }}
+        #   timeout: 60000
