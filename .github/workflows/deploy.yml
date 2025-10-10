@@ -35,7 +35,7 @@ jobs:
           rm -rf tests
           rm -rf .github
           rm -rf .git
-          rm -rf storage/logs/*.log
+          rm -rf storage/logs/*.log 
           rm -rf bootstrap/cache/*.php
 
       - name: 📤 Deploy to Namecheap via FTP
