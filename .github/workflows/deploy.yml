@@ -49,4 +49,5 @@ jobs:
           passive: true
           local-dir: ./ # Upload all Laravel files
           server-dir: ${{ secrets.FTP_TARGET_DIR }}
+          securtiy: strict
         #   timeout: 60000
