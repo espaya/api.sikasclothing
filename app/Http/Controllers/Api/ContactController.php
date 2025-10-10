@@ -13,6 +13,21 @@ use Illuminate\Support\Facades\Mail;
 
 class ContactController extends Controller
 {
+    public function index()
+    {
+        try {
+            $contact = ContactUs::orderBy('id', 'DESC')->paginate(10);
+            if ($contact->isEmpty()) {
+                return response()->json(['message' => 'No contacts found!'], 404);
+            }
+
+            return response()->json($contact, 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -29,8 +44,7 @@ class ContactController extends Controller
             'message.string' => 'Invalid inputs'
         ]);
 
-        try 
-        {
+        try {
             DB::beginTransaction();
 
             $name = htmlspecialchars(trim($request->contact_us_name), ENT_QUOTES, 'utf-8');
@@ -52,10 +66,7 @@ class ContactController extends Controller
                 'success' => true,
                 'message' => 'We have received your message. Thank you'
             ], 200);
-
-        }
-        catch(Exception $ex)
-        {
+        } catch (Exception $ex) {
             DB::rollBack();
             Log::error('Could not deliver your message. Try again later: ' . $ex->getMessage());
             return response()->json([

@@ -260,6 +260,141 @@ class ProductController extends Controller
         }
     }
 
+    public function edit($slug)
+    {
+        try {
+            $product = Products::with([
+                'brandRelation:id,name',
+                'discount:id,title',
+                'categories:id,name',
+                'tags:id,name'
+            ])->where('slug', $slug)->first();
+
+            if (!$product) {
+                return response()->json(['message' => 'Product Not Found!'], 404);
+            }
+
+            return response()->json($product, 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    public function update(Request $request, $slug)
+    {
+        $request->validate([
+            'product_name' => ['required', 'string'],
+            'category' => ['required', 'array', 'min:1'],
+            'category.*' => ['string'],
+            'tags' => ['nullable', 'array', 'min:1'],
+            'tags.*' => ['string'],
+            'gender' => ['required', 'string', 'in:Male,Female,Unisex,Other'],
+            'brand' => ['required_without:custom_brand', 'string', 'nullable'],
+            'custom_brand' => ['required_without:brand', 'string', 'nullable'],
+            'description' => ['required', 'string'],
+            'price' => ['required', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'sale_price' => ['nullable', 'regex:/^\d+(\.\d{1,2})?$/'],
+            'stock_quantity' => ['required', 'integer', 'min:0'],
+            'stock_status' => ['required', 'in:in_stock,out_of_stock,backorder'],
+            'colors' => ['required', 'array', 'min:1', 'not_in:#ffffff'],
+            'colors.*' => [
+                'required',
+                'string',
+                'regex:/^(#(?:[0-9a-fA-F]{3}){1,2}|rgba?\(\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*,\s*\d{1,3}%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|hsla?\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*(?:,\s*(?:0|1|0?\.\d+))?\s*\))$/i',
+            ],
+
+            'material' => ['required', 'string'],
+            'fit_type' => ['required', 'array', 'min:1'],
+            'fit_type.*' => ['string'],
+            // 'size' => ['required_without:custom_size', 'string', 'nullable'],
+            // 'custom_size' => ['required_without:size', 'string', 'nullable'],
+            'size' => ['required', 'array', 'min:1'],
+            'size.*' => ['string'],
+            'gallery' => ['required', 'array', 'min:3'],
+            'gallery.*' => ['file', 'mimes:jpg,jpeg,webp,png,avif', 'max:5120'],
+            'status' => ['required', 'in:Published,Draft'],
+            'featured' => ['nullable'],
+            'display_in_hero' => ['nullable'],
+            'barcode' => ['nullable', 'string', 'unique:products,barcode'],
+            'discount' => ['nullable', 'string'],
+            'weight' => ['nullable', 'string'],
+            'dimensions' => ['nullable', 'string'],
+            'storage' => ['nullable', 'string']
+        ], [
+            'product_name.required' => 'This field is required',
+            'product_name.string' => 'Invalid inputs',
+            'category.required' => 'This field is required',
+            'category.string' => 'Invalid input',
+            'tags.string' => 'Invalid inputs',
+            'gender.required' => 'This field is required',
+            'gender.string' => 'Invalid input',
+            'brand.required' => 'This field is required',
+            'brand.string' => 'Invalid inputs',
+            'description.required' => 'This field is required',
+            'description.string' => 'Invalid inputs',
+            'price.required' => 'This field is required',
+            'price.regex' => 'Invalid inputs. format: 12.54 etc only allowed',
+            'sale_price.regex' => 'Invalid inputs. format: 12.54 etc only allowed',
+            'stock_quantity.required' => 'This field is required',
+            'stock_quantity.integer' => 'This valid input. Only integers are allowed',
+            'stock_status.required' => 'This field is required',
+            'stock_status.in' => 'Only "In Stock", "Out of Stock" and "Backorder" are allowed ',
+            'status.required' => 'This field is required',
+            'status.in' => 'Only "Published" and "Draft" are allowed',
+            'featured.boolean' => 'Invalid input',
+            'barcode.string' => 'Invalid barcode',
+            'barcode.unique' => 'This barcode already exists'
+        ]);
+
+        DB::beginTransaction();
+
+        $imagePaths = [];
+
+        try {
+
+            $product = Products::where('slug', $slug)->first();
+
+            if (!$product) {
+                return response()->json(['message' => 'Product not found!'], 404);
+            }
+
+            // Upload gallery images
+            if ($request->hasFile('gallery')) {
+                $directory = 'products';
+
+                // Ensure the directory exists in the public disk
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory, 0755, true);
+                }
+
+                foreach ($request->file('gallery') as $image) {
+                    $imageName = time() . '_' . uniqid() . '.' . $image->getClientOriginalExtension();
+                    $path = $image->storeAs($directory, $imageName, 'public');
+                    $imagePaths[] = $path;
+                }
+            }
+
+            $tagIds = collect($request->tags ?? [])
+                ->filter(fn($tag) => is_string($tag) && trim($tag) !== '')
+                ->map(function ($tagName) {
+                    return Tag::firstOrCreate(['name' => trim($tagName)])->id;
+                });
+
+            if ($product->isDirty()) {
+                $product->save();
+                $product->tag()->sync($tagIds->toArray());
+                $product->categories()->attach($request->category);
+                return response()->json(['message' => 'Product updated successfully'], 200);
+            }
+            return response()->json(['message' => 'No changes detected'], 200);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     private function generateSKU($productName, $brand, $size)
     {
         $brand = (string) $brand;

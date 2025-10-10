@@ -78,8 +78,7 @@ class BrandController extends Controller
                 'slug' => $slug
             ]);
 
-            if($logoFile)
-            {
+            if ($logoFile) {
                 $directory = 'brands';
                 $logoPath = $logoFile->storeAs($directory, $logoName, 'public');
                 $brand->update(['logo' => $logoPath]);
@@ -93,6 +92,18 @@ class BrandController extends Controller
             DB::rollBack();
             Log::error('Error saving brand: ' . $ex->getMessage());
             return response()->json(['message' => 'Error saving brand'], 500);
+        }
+    }
+
+    public function getBrandsLogo()
+    {
+        try {
+            $brands = Brand::orderBy('name', 'DESC')->get();
+
+            return response()->json($brands);
+        } catch (Exception $ex) {
+            Log::error('error fetching brand options: ' . $ex->getMessage());
+            return response()->json(['message' => 'Error fetching brands']);
         }
     }
 }

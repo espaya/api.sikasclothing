@@ -1,6 +1,8 @@
 <?php
 
 use App\Http\Controllers\Api\AccountDetailsController;
+use App\Http\Controllers\Api\Admin\AdminBlogController;
+use App\Http\Controllers\Api\Admin\BlogCategoryController;
 use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CallToActionController;
 use App\Http\Controllers\Api\Admin\CategoryController;
@@ -9,6 +11,7 @@ use App\Http\Controllers\Api\Admin\DiscountController;
 use App\Http\Controllers\Api\Admin\HeroController;
 use App\Http\Controllers\Api\Admin\MenuController;
 use App\Http\Controllers\Api\Admin\ProductController;
+use App\Http\Controllers\API\Admin\Settings\SocialMediaController;
 use App\Http\Controllers\Api\Admin\ShippingMethodsController;
 use App\Http\Controllers\Api\Admin\TaxRateController;
 use App\Http\Controllers\Api\ContactController;
@@ -88,11 +91,21 @@ Route::middleware(['web'])->group(function () {
     Route::get('shop-products', [ShopPageController::class, 'index']);
     Route::get('shop-category', [ShopPageController::class, 'getCategory']);
     Route::get('shop-random-category', [ShopPageController::class, 'randomCategories']);
+
+    Route::get('/get-brand-logos', [BrandController::class, 'getBrandsLogo']);
+
+    // Blog
+    Route::get('/blog/get', [AdminBlogController::class, 'index']);
+    Route::get('/blog/view/{slug}', [AdminBlogController::class, 'view']);
+    Route::post('/blog/view/{slug}/comment/store', [AdminBlogController::class, 'storeComment']);
+    Route::get('/settings/social-links', [SocialMediaController::class, 'index']);
 });
 
 Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::get('get-product', [ProductController::class, 'index']);
+    Route::get('edit-product/{slug}', [ProductController::class, 'edit']);
+    Route::post('update-product/{slug}', [ProductController::class, 'update']);
     Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']);
     Route::post('/add-category', [CategoryController::class, 'store']);
     Route::get('/get-category', [CategoryController::class, 'index']);
@@ -105,10 +118,15 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/customers', [CustomerController::class, 'index']);
     // menus
     Route::post('/add-menu', [MenuController::class, 'store']);
-    
 
+    // shipping
     Route::post('/settings/shipping-methods/add', [ShippingMethodsController::class, 'store']);
     Route::get('/settings/shipping-methods/get', [ShippingMethodsController::class, 'index']);
+
+    // social media
+    Route::post('/settings/social-media/store', [SocialMediaController::class, 'store']);
+    Route::delete('/settings/social-media/delete/{id}', [SocialMediaController::class, 'destroy']);
+    Route::get('/settings/social-media', [SocialMediaController::class, 'index']);
 
     Route::post('/store-hero', [HeroController::class, 'store']);
     Route::post('/add-spotlight', [SpotlightController::class, 'store']);
@@ -119,6 +137,16 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::apiResource('tax-rates', TaxRateController::class);
     Route::post('tax-rates/bulk-import', [TaxRateController::class, 'bulkImport']);
     Route::get('tax-rates/export/csv', [TaxRateController::class, 'export']);
+
+    // blog route
+    Route::post('/store-post-category', [BlogCategoryController::class, 'store']);
+    Route::get('/get-post-category', [BlogCategoryController::class, 'index']);
+    Route::post('/blog/create', [AdminBlogController::class, 'store']);
+    Route::get('/blog/comments', [AdminBlogController::class, 'fetchComments']);
+    Route::post('/blog/comments/approve/{id}', [AdminBlogController::class, 'approveComment']);
+
+    // Contact 
+    Route::get('/admin/contact-us/get', [ContactController::class, 'index']);
 });
 
 
@@ -127,7 +155,7 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::get('/user', function (Request $request) {
         return response()->json($request->user());
     });
-    
+
     Route::post('/update-account-details', [AccountDetailsController::class, 'store']);
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])->name('logout');
     Route::get('/get-account-details', [AccountDetailsController::class, 'getAccountDetails']);
