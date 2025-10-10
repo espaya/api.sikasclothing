@@ -48,5 +48,5 @@ jobs:
           protocol: ftp
           local-dir: ./ # Upload all Laravel files
           server-dir: ${{ secrets.FTP_TARGET_DIR }}
-          securtiy: strict
+        #   securtiy: strict
         #   timeout: 60000
