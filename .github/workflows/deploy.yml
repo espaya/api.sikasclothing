@@ -43,8 +43,10 @@ jobs:
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }} 
-          password: Magicmediaghana77@
-          port: ${{ secrets.FTP_PORT }}
-          server-dir: ${{ secrets.FTP_TARGET_DIR }}
-          protocol: ftp
+          password: ${{ secrets.FTP_PASSWORD }}
+         
+         
           local-dir: ./ # Upload all Laravel files
+         
+          # security: strict
+          # timeout: 60000
