@@ -49,4 +49,4 @@ jobs:
           local-dir: ./ # Upload all Laravel files
          
           # security: strict
-          # timeout: 60000
+          timeout: 600000
