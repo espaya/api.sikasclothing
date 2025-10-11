@@ -49,5 +49,5 @@ jobs:
           protocol: ftp
           local-dir: ./ # Upload all Laravel files
          
-          # security: strict
-          timeout: 600000
+          security: loose
+          timeout: 900000
