@@ -100,7 +100,7 @@ Route::middleware(['web'])->group(function () {
     Route::post('/blog/view/{slug}/comment/store', [AdminBlogController::class, 'storeComment']);
     Route::get('/settings/social-links', [SocialMediaController::class, 'index']);
 });
-
+ 
 Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::get('get-product', [ProductController::class, 'index']);
