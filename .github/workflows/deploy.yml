@@ -48,12 +48,12 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
-         
-          protocol: ftps
+          
+          # protocol: ftps
           local-dir: ./
-          security: loose
-          timeout: 900000
-          log-level: verbose
+          # security: loose
+          # timeout: 900000
+          # log-level: verbose
           exclude: |
             **/.env*
             **/.git*
