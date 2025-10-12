@@ -49,7 +49,7 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           port: ${{ secrets.FTP_PORT }}
           server-dir: ${{ secrets.FTP_TARGET_DIR }}
-          protocol: ftp
+          protocol: ftpes
           local-dir: ./
           security: loose
           timeout: 900000
