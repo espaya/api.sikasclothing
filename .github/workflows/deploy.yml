@@ -52,7 +52,7 @@ jobs:
           # protocol: ftps
           local-dir: ./
           # security: loose
-          # timeout: 900000
+          timeout: 900000
           # log-level: verbose
           exclude: |
             **/.env*

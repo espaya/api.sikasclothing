@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AccountDetailsController;
 use App\Http\Controllers\Api\Admin\AdminBlogController;
+use App\Http\Controllers\Api\Admin\AdminOrdersController;
 use App\Http\Controllers\Api\Admin\BlogCategoryController;
 use App\Http\Controllers\Api\Admin\BrandController;
 use App\Http\Controllers\Api\Admin\CallToActionController;
@@ -99,8 +100,8 @@ Route::middleware(['web'])->group(function () {
     Route::get('/blog/view/{slug}', [AdminBlogController::class, 'view']);
     Route::post('/blog/view/{slug}/comment/store', [AdminBlogController::class, 'storeComment']);
     Route::get('/settings/social-links', [SocialMediaController::class, 'index']);
-}); 
- 
+});
+
 Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStateful::class, 'auth:sanctum'])->group(function () {
     Route::post('/add-product', [ProductController::class, 'store']);
     Route::get('get-product', [ProductController::class, 'index']);
@@ -147,6 +148,9 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
 
     // Contact 
     Route::get('/admin/contact-us/get', [ContactController::class, 'index']);
+
+    // Admin orders
+    Route::get('/admin/all-orders', [AdminOrdersController::class, 'index']);
 });
 
 

@@ -14,7 +14,8 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Cache;
-
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ProductController extends Controller
 {
@@ -303,67 +304,102 @@ class ProductController extends Controller
                 'string',
                 'regex:/^(#(?:[0-9a-fA-F]{3}){1,2}|rgba?\(\s*\d{1,3}%?\s*,\s*\d{1,3}%?\s*,\s*\d{1,3}%?(?:\s*,\s*(?:0|1|0?\.\d+))?\s*\)|hsla?\(\s*\d{1,3}(?:deg)?\s*,\s*\d{1,3}%\s*,\s*\d{1,3}%\s*(?:,\s*(?:0|1|0?\.\d+))?\s*\))$/i',
             ],
-
             'material' => ['required', 'string'],
             'fit_type' => ['required', 'array', 'min:1'],
             'fit_type.*' => ['string'],
-            // 'size' => ['required_without:custom_size', 'string', 'nullable'],
-            // 'custom_size' => ['required_without:size', 'string', 'nullable'],
             'size' => ['required', 'array', 'min:1'],
             'size.*' => ['string'],
-            'gallery' => ['required', 'array', 'min:3'],
-            'gallery.*' => ['file', 'mimes:jpg,jpeg,webp,png,avif', 'max:5120'],
+            'gallery' => ['nullable', 'array'],
+            'gallery.*' => [
+                'sometimes',
+                function ($attribute, $value, $fail) {
+                    if ($value instanceof \Illuminate\Http\UploadedFile) {
+                        $validator = Validator::make(
+                            [$attribute => $value],
+                            ['file' => 'mimes:jpg,jpeg,webp,png,avif|max:5120']
+                        );
+                        if ($validator->fails()) {
+                            $fail('Gallery images must be JPG, JPEG, PNG, WEBP, or AVIF and less than 5MB.');
+                        }
+                    }
+                }
+            ],
             'status' => ['required', 'in:Published,Draft'],
             'featured' => ['nullable'],
             'display_in_hero' => ['nullable'],
-            'barcode' => ['nullable', 'string', 'unique:products,barcode'],
+            'barcode' => ['nullable', 'string', Rule::unique('products', 'barcode')->ignore($slug, 'slug')],
             'discount' => ['nullable', 'string'],
             'weight' => ['nullable', 'string'],
             'dimensions' => ['nullable', 'string'],
-            'storage' => ['nullable', 'string']
+            'storage' => ['nullable', 'string'],
         ], [
-            'product_name.required' => 'This field is required',
-            'product_name.string' => 'Invalid inputs',
-            'category.required' => 'This field is required',
-            'category.string' => 'Invalid input',
-            'tags.string' => 'Invalid inputs',
-            'gender.required' => 'This field is required',
-            'gender.string' => 'Invalid input',
-            'brand.required' => 'This field is required',
-            'brand.string' => 'Invalid inputs',
-            'description.required' => 'This field is required',
-            'description.string' => 'Invalid inputs',
-            'price.required' => 'This field is required',
-            'price.regex' => 'Invalid inputs. format: 12.54 etc only allowed',
-            'sale_price.regex' => 'Invalid inputs. format: 12.54 etc only allowed',
-            'stock_quantity.required' => 'This field is required',
-            'stock_quantity.integer' => 'This valid input. Only integers are allowed',
-            'stock_status.required' => 'This field is required',
-            'stock_status.in' => 'Only "In Stock", "Out of Stock" and "Backorder" are allowed ',
-            'status.required' => 'This field is required',
-            'status.in' => 'Only "Published" and "Draft" are allowed',
-            'featured.boolean' => 'Invalid input',
-            'barcode.string' => 'Invalid barcode',
-            'barcode.unique' => 'This barcode already exists'
+            'required' => 'The :attribute field is required.',
+            'string' => 'The :attribute must be a valid string.',
+            'array' => 'The :attribute must be an array.',
+            'min' => 'Please provide at least one :attribute item.',
+            'in' => 'The selected :attribute is invalid.',
+            'regex' => 'The :attribute format is invalid.',
+            'integer' => 'The :attribute must be an integer.',
+            'not_in' => 'The :attribute contains an invalid value.',
+            'required_without' => 'The :attribute field is required when :values is not present.',
+            'mimes' => 'The :attribute must be a file of type: :values.',
+            'max' => 'The :attribute must not be greater than :max kilobytes.',
+            'unique' => 'The :attribute has already been taken.',
+            'nullable' => 'The :attribute field may be left empty.',
+            'sometimes' => 'The :attribute validation failed due to invalid file input.',
         ]);
+
+        $colors = collect($request->colors)
+            ->reject(fn($color, $i) => $i === 0 && strtolower($color) === '#ffffff');
+
+        if ($colors->isEmpty()) {
+            return back()->withErrors(['colors' => 'Please select at least one color.'])->withInput();
+        }
 
         DB::beginTransaction();
 
-        $imagePaths = [];
-
         try {
-
             $product = Products::where('slug', $slug)->first();
 
             if (!$product) {
                 return response()->json(['message' => 'Product not found!'], 404);
             }
 
-            // Upload gallery images
+            $fieldsToUpdate = [
+                'product_name' => trim($request->product_name),
+                'gender' => trim($request->gender),
+                'brand' => trim($request->brand ?? $request->custom_brand ?? ''),
+                'description' => trim($request->description),
+                'price' => trim($request->price),
+                'sale_price' => trim($request->sale_price),
+                'stock_quantity' => trim($request->stock_quantity),
+                'stock_status' => trim($request->stock_status),
+                'color' => json_encode($request->colors),
+                'material' => trim($request->material),
+                'fit_type' => json_encode($request->fit_type),
+                'size' => json_encode($request->size),
+                'status' => trim($request->status),
+                'featured' => $request->featured ?? null,
+                'display_in_hero' => $request->display_in_hero ?? null,
+                'barcode' => trim($request->barcode),
+                'discount' => $request->discount ?? '',
+                'weight' => $request->weight ?? '',
+                'dimensions' => $request->dimensions ?? '',
+                'storage' => $request->storage ?? '',
+            ];
+
+            foreach ($fieldsToUpdate as $key => $value) {
+                if ($product->$key != $value) {
+                    $product->$key = $value;
+                }
+            }
+
+            $galleryChanged = false;
+            $imagePaths = [];
+
+            // Handle new gallery uploads
             if ($request->hasFile('gallery')) {
                 $directory = 'products';
-
-                // Ensure the directory exists in the public disk
                 if (!Storage::disk('public')->exists($directory)) {
                     Storage::disk('public')->makeDirectory($directory, 0755, true);
                 }
@@ -373,27 +409,46 @@ class ProductController extends Controller
                     $path = $image->storeAs($directory, $imageName, 'public');
                     $imagePaths[] = $path;
                 }
+
+                $existingGallery = $product->gallery ? explode(',', $product->gallery) : [];
+                $mergedGallery = array_merge($existingGallery, $imagePaths);
+                $product->gallery = implode(',', $mergedGallery);
+                $galleryChanged = true;
             }
 
+            // Sync tags and categories
             $tagIds = collect($request->tags ?? [])
                 ->filter(fn($tag) => is_string($tag) && trim($tag) !== '')
-                ->map(function ($tagName) {
-                    return Tag::firstOrCreate(['name' => trim($tagName)])->id;
-                });
+                ->map(fn($tagName) => Tag::firstOrCreate(['name' => trim($tagName)])->id);
 
-            if ($product->isDirty()) {
-                $product->save();
-                $product->tag()->sync($tagIds->toArray());
-                $product->categories()->attach($request->category);
-                return response()->json(['message' => 'Product updated successfully'], 200);
+            $categoriesChanged = $product->categories()->pluck('category_id')->sort()->values()->toArray() !== collect($request->category)->sort()->values()->toArray();
+            $tagsChanged = $product->tags()->pluck('tag_id')->sort()->values()->toArray() !== $tagIds->sort()->values()->toArray();
+
+            // 🚀 Detect if ANY change happened
+            $hasChanges = $product->isDirty() || $galleryChanged || $categoriesChanged || $tagsChanged;
+
+            if (!$hasChanges) {
+                DB::rollBack();
+                return response()->json(['message' => 'No changes were detected.'], 200);
             }
-            return response()->json(['message' => 'No changes detected'], 200);
+
+            // Save and sync
+            $product->save();
+            $product->tags()->sync($tagIds->toArray());
+            $product->categories()->sync($request->category);
+
+            DB::commit();
+
+            Cache::flush();
+
+            return response()->json(['message' => 'Product updated successfully'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
-            Log::error($ex->getMessage());
-            return response()->json(['message' => 'An unexpected error occurred'], 500);
+            Log::error('Error updating product: ' . $ex->getMessage());
+            return response()->json(['message' => 'Error updating product'], 500);
         }
     }
+
 
     private function generateSKU($productName, $brand, $size)
     {
