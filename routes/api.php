@@ -110,6 +110,8 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::delete('/delete-product/{id}', [ProductController::class, 'destroy']);
     Route::post('/add-category', [CategoryController::class, 'store']);
     Route::get('/get-category', [CategoryController::class, 'index']);
+    Route::get('/single-category/{slug}', [CategoryController::class, 'view']);
+    Route::post('/update-category/{slug}', [CategoryController::class, 'update']);
     Route::post('/add-discount', [DiscountController::class, 'store']);
     Route::get('/get-discount', [DiscountController::class, 'index']);
     Route::post('/add-brand', [BrandController::class, 'store']);
