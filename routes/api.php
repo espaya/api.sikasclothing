@@ -113,6 +113,8 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/single-category/{slug}', [CategoryController::class, 'view']);
     Route::post('/update-category/{slug}', [CategoryController::class, 'update']);
     Route::post('/add-discount', [DiscountController::class, 'store']);
+    Route::post('/single-discount/{id}', [DiscountController::class, 'view']);
+    Route::post('/update-discount/{id}', [DiscountController::class, 'update']);
     Route::get('/get-discount', [DiscountController::class, 'index']);
     Route::post('/add-brand', [BrandController::class, 'store']);
     Route::get('/get-brands', [BrandController::class, 'index']);
