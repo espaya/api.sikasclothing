@@ -123,7 +123,6 @@ class CartController extends Controller
 
     public function update(Request $request, $id)
     {
-        Log::info("Quantity: " . $request->quantity);
         $request->validate([
             'product_id' => ['required', 'exists:product,id'], // Fixed table name (assuming 'products')
             'quantity' => ['required', 'integer', 'min:1'],

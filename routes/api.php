@@ -60,8 +60,6 @@ Route::middleware(['web'])->group(function () {
     Route::get('/shop-by-category', [HomeController::class, 'shopByCategory']);
     Route::get('/shop/{slug}', [ProductController::class, 'show']);
     Route::post('/store-reviews/{id}', [ReviewsController::class, 'store']);
-    Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
-    Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
     Route::get('/get-hero', [HeroController::class, 'index']);
     Route::get('/get-spotlight-frontpage', [SpotlightController::class, 'frontpage']);
     Route::get('/get-call-to-actions', [CallToActionController::class, 'index']);
@@ -118,6 +116,8 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/get-discount', [DiscountController::class, 'index']);
     Route::post('/add-brand', [BrandController::class, 'store']);
     Route::get('/get-brands', [BrandController::class, 'index']);
+    Route::post('/update-brand/{slug}', [BrandController::class, 'update']);
+    Route::get('/single-brand/{slug}', [BrandCOntroller::class, 'view']);
 
     // customers
     Route::get('/customers', [CustomerController::class, 'index']);
@@ -172,8 +172,13 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::post('/update-shipping-address', [ShippingAddressController::class, 'store']);
     Route::get('/get-shipping-address', [ShippingAddressController::class, 'shippingAddress']);
     Route::get('/get-single-shipping-address/{id}', [ShippingAddressController::class, 'singleAddress']);
+
     Route::get('/get-wishlists', [CustomerWishlistController::class, 'index']);
     Route::delete('/remove-from-wishlist/{id}', [CustomerWishlistController::class, 'destroy']);
+
+    Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
+    Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
+
     Route::post('/place-order', [CheckoutController::class, 'store']);
     Route::get('/get-single-order/{id}', [CheckoutController::class, 'getOrderSingle']);
     Route::get('/all-orders', [CheckoutController::class, 'allOrders']);

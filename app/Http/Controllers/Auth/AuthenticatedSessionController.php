@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Mail\LoginMail;
+use App\Models\Products;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,9 @@ use Inertia\Inertia;
 use Inertia\Response;
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Session;
 use Laravel\Sanctum\PersonalAccessToken;
 
 
@@ -102,6 +105,57 @@ class AuthenticatedSessionController extends Controller
     public function authenticated(Request $request, $user)
     {
         // Do nothing — this stops it from redirecting
+
+        try {
+            // sync guest session cart to database
+            $guestCart = Session::get('cart', []);
+
+            if (!empty($guestCart)) {
+                foreach ($guestCart as $item) {
+                    $product = Products::find($item['product_id']);
+                    if (!$product) continue;
+
+                    $existing = $user->cartItems()->where('product_id', $product->id)->first();
+
+                    if ($existing) {
+                        // merge quantities
+                        $existing->quantity += $item['quantity'];
+                        $existing->save();
+                    } else {
+                        // Add new item
+                        $user->cartItems()->create([
+                            'product_id' => $product->id,
+                            'quantity' => $item['quantity'],
+                            'price' => $product->price,
+                            'size' => $item['size'] ?? null,
+                            'color' => $item['color'] ?? null,
+                            'user_id' => $user->id,
+                        ]);
+                    }
+                }
+
+                // clear quest cart from session
+                Session::forget('cart');
+
+                // clear user cache for cart count if you use one
+                Cache::forget("cart_user_$user->id");
+            }
+
+            // Determine redirect based on user role
+            $redirectUrl = match ($user->role) {
+                'USERS' => '/account',
+                'ADMIN' => 'sc-dashboard',
+                default => '/login'
+            };
+
+            return response()->json([
+                'token' => $user,
+                'redirect_url' => $redirectUrl
+            ], 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred while syncing your cart'], 500);
+        }
     }
 
 
