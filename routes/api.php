@@ -91,6 +91,9 @@ Route::middleware(['web'])->group(function () {
     Route::get('shop-category', [ShopPageController::class, 'getCategory']);
     Route::get('shop-random-category', [ShopPageController::class, 'randomCategories']);
 
+    // wishlist
+    Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
+
     Route::get('/get-brand-logos', [BrandController::class, 'getBrandsLogo']);
 
     // Blog
@@ -155,6 +158,7 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
 
     // Admin orders
     Route::get('/admin/all-orders', [AdminOrdersController::class, 'index']);
+    Route::get('/admin/get-order/{order_number}', [AdminOrdersController::class, 'view']);
 });
 
 
@@ -177,7 +181,6 @@ Route::middleware(['prevent.back', EnsureFrontendRequestsAreStateful::class, 'au
     Route::delete('/remove-from-wishlist/{id}', [CustomerWishlistController::class, 'destroy']);
 
     Route::post('/store/add-to-wishlist/{id}', [ProductController::class, 'addToWishlist']);
-    Route::get('/store/check-wishlist/{id}', [ProductController::class, 'checkWishlist']);
 
     Route::post('/place-order', [CheckoutController::class, 'store']);
     Route::get('/get-single-order/{id}', [CheckoutController::class, 'getOrderSingle']);
