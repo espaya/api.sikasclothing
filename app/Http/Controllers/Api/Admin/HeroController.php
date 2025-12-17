@@ -26,6 +26,21 @@ class HeroController extends Controller
         return response()->json($heroes);
     }
 
+    public function view($id)
+    {
+        try {
+            $hero = Hero::where('id', $id)->first();
+
+            if (!$hero) {
+                return response()->json(['message' => 'Hero not found'], 404);
+            }
+            return response()->json($hero, 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage() . ' on line: ' . $ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     public function store(Request $request)
     {
         $request->validate([
@@ -86,6 +101,90 @@ class HeroController extends Controller
             DB::rollBack();
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An error occurred, try again later'], 500);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        $validated = $request->validate([
+            'title' => ['required', 'string'],
+            'subtitle' => ['required', 'string'],
+            'text' => ['required', 'string'],
+            'img' => ['nullable', 'mimes:png,jpg,jpeg,webp'],
+            'btn_text' => ['required', 'string'],
+            'btn_link' => ['required', 'url'],
+        ], [
+            'title.required' => 'This field is required',
+            'subtitle.required' => 'This field is required',
+            'text.required' => 'This field is required',
+            'img.mimes' => 'Invalid image type',
+            'btn_text.required' => 'This field is required',
+            'btn_link.url' => 'Invalid url',
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $hero = Hero::findOrFail($id);
+
+            $oldImage = $hero->img;
+            $newImageName = null;
+
+            /**
+             * 1️⃣ Fill only provided fields
+             */
+            $hero->fill($validated);
+
+            /**
+             * 2️⃣ Handle image change
+             */
+            if ($request->hasFile('img')) {
+                $newImageName = uniqid() . '.' . $request->img->extension();
+                $hero->img = $newImageName;
+            }
+
+            /**
+             * 3️⃣ Stop if nothing changed
+             */
+            if (! $hero->isDirty()) {
+                DB::rollBack();
+
+                return response()->json([
+                    'message' => 'No changes detected'
+                ], 200);
+            }
+
+            /**
+             * 4️⃣ Save DB changes
+             */
+            $hero->save();
+
+            /**
+             * 5️⃣ File system AFTER DB success
+             */
+            if ($request->hasFile('img')) {
+                if ($oldImage && Storage::disk('public')->exists('heros/' . $oldImage)) {
+                    Storage::disk('public')->delete('heros/' . $oldImage);
+                }
+
+                $request->img->storeAs('heros', $newImageName, 'public');
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Hero updated successfully'
+            ], 200);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            Log::error($e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'message' => 'Update failed. Changes rolled back.'
+            ], 500);
         }
     }
 }

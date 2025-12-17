@@ -27,6 +27,7 @@ class Order extends Model
         'tracking_number',
         'currency',
         'notes',
+        'admin_notes'
     ];
 
     protected static function boot()

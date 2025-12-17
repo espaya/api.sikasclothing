@@ -137,9 +137,18 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/settings/social-media', [SocialMediaController::class, 'index']);
 
     Route::post('/store-hero', [HeroController::class, 'store']);
+    Route::get('/get-single-hero/{id}', [HeroController::class, 'view']);
+    Route::post('/update-hero/{id}', [HeroController::class, 'update']);
+
     Route::post('/add-spotlight', [SpotlightController::class, 'store']);
     Route::get('/get-spotlight', [SpotlightController::class, 'index']);
+    Route::get('single-spotlight/{id}', [SpotlightController::class, 'view']);
+    Route::post('update-single-spotlight/{id}', [SpotlightController::class, 'update']);
+
     Route::post('/add-call-to-action', [CallToActionController::class, 'store']);
+    Route::get('get-single-cta/{id}', [CallToActionController::class, 'view']);
+    Route::post('update-single-cta/{id}', [CallToActionController::class, 'update']);
+
 
     // Tax Rates
     Route::apiResource('tax-rates', TaxRateController::class);
@@ -159,6 +168,7 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     // Admin orders
     Route::get('/admin/all-orders', [AdminOrdersController::class, 'index']);
     Route::get('/admin/get-order/{order_number}', [AdminOrdersController::class, 'view']);
+    Route::post('/admin/update-order-options/{id}', [AdminOrdersController::class, 'updateOrderOptions']);
 });
 
 
