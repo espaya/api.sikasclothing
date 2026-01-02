@@ -124,8 +124,10 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
 
     // customers
     Route::get('/customers', [CustomerController::class, 'index']);
+
     // menus
     Route::post('/add-menu', [MenuController::class, 'store']);
+    Route::get('get-single-menu/{id}', [MenuController::class, 'view']);
 
     // shipping
     Route::post('/settings/shipping-methods/add', [ShippingMethodsController::class, 'store']);

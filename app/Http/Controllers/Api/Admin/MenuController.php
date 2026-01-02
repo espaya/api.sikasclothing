@@ -114,6 +114,20 @@ class MenuController extends Controller
         ]);
     }
 
+    public function view($id)
+    {
+        try {
+            $menu = Menu::where('id', $id)->first();
+            if (!$menu) {
+                return response()->json(['message' => 'Menu not found'], 404);
+            }
+            return response()->json($menu, 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage() . ' on line: ' . $ex->getLine());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     public function destroy($id)
     {
         try {
