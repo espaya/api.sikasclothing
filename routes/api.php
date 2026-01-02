@@ -163,9 +163,14 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::post('/blog/create', [AdminBlogController::class, 'store']);
     Route::get('/blog/comments', [AdminBlogController::class, 'fetchComments']);
     Route::post('/blog/comments/approve/{id}', [AdminBlogController::class, 'approveComment']);
+    Route::get('admin/blog/get', [AdminBlogController::class, 'index']);
+    
 
     // Contact 
     Route::get('/admin/contact-us/get', [ContactController::class, 'index']);
+    Route::delete('/admin/contact-us/delete/{id}', [ContactController::class, 'destroy']);
+    Route::patch('/admin/contact-us/mark-as-read/{id}', [ContactController::class, 'markAsRead']);
+
 
     // Admin orders
     Route::get('/admin/all-orders', [AdminOrdersController::class, 'index']);

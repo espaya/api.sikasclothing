@@ -33,7 +33,8 @@ class ContactController extends Controller
         $request->validate([
             'contact_us_name' => ['required', 'string'],
             'contact_us_email' => ['required', 'email'],
-            'message' => ['nullable', 'string']
+            'message' => ['required', 'string'],
+            'subject' => ['required', 'string']
         ], [
             'contact_us_name.required' => 'This field is required',
             'contact_us_name.string' => 'Invalid inputs',
@@ -41,24 +42,27 @@ class ContactController extends Controller
             'contact_us_email.required' => 'This field is required',
             'contact_us_email.email' => 'Incorrect email',
 
-            'message.string' => 'Invalid inputs'
+            'message.required' => 'This field is required',
+            'message.string' => 'Invalid inputs',
+
+            'subject.required' => 'This field is required',
+            'subject.string' => 'Invalid input'
         ]);
 
         try {
             DB::beginTransaction();
 
-            $name = htmlspecialchars(trim($request->contact_us_name), ENT_QUOTES, 'utf-8');
-            $email = htmlspecialchars(trim($request->contact_us_email), ENT_QUOTES, 'utf-8');
-            $message = htmlspecialchars(trim($request->message), ENT_QUOTES, 'utf-8');
 
             ContactUs::create([
-                'name' => $name,
-                'email' => $email,
-                'message' => $message
+                'name' => $request->contact_us_name,
+                'email' => $request->contact_us_email,
+                'message' => $request->message,
+                'subject' => $request->subject,
+                'is_read' => false
             ]);
 
             // send email notification to the user
-            Mail::to($email)->send(new ContactMail($name));
+            Mail::to($request->contact_us_email)->send(new ContactMail($request->contact_us_name));
 
             DB::commit();
 
@@ -73,6 +77,47 @@ class ContactController extends Controller
                 'success' => false,
                 'message' => 'Could not deliver your message. Try again later'
             ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $contact = ContactUs::find($id);
+
+            if (!$contact) {
+                return response()->json(['message' => 'Contact was not found!'], 404);
+            }
+
+            $contact->delete();
+            return response()->json(['message' => 'Contact deleted successfully'], 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage() . ' on line: ' . $ex->getLine());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    public function markAsRead($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $contact = ContactUs::find($id);
+
+            if (!$contact) {
+                return response()->json(['message' => 'Contact not found!'], 200);
+            }
+
+            $contact->is_read = true;
+            $contact->save();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Contact marked as read successfully'], 200);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error($ex->getMessage() . ' on line: ' . $ex->getLine());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
 }
