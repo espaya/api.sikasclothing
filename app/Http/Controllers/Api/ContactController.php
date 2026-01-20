@@ -108,15 +108,46 @@ class ContactController extends Controller
                 return response()->json(['message' => 'Contact not found!'], 200);
             }
 
-            $contact->is_read = true;
-            $contact->save();
+            // mark as read
+            if (!$contact->is_read) {
+                $contact->is_read = true;
+                $contact->save();
 
-            DB::commit();
+                DB::commit();
 
-            return response()->json(['message' => 'Contact marked as read successfully'], 200);
+                return response()->json(['message' => 'Message marked as read successfully'], 200);
+            }
+
+            return response()->json(['message' => 'Message already marked as read'], 200);
         } catch (Exception $ex) {
             DB::rollBack();
             Log::error($ex->getMessage() . ' on line: ' . $ex->getLine());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    public function markAsUnread($id)
+    {
+        DB::beginTransaction();
+
+        try {
+            $contact = ContactUs::find($id);
+
+            if (!$contact) {
+                return response()->json(['message' => 'Contact not found'], 404);
+            }
+
+            if ($contact->is_read) {
+                $contact->is_read = false;
+                DB::commit();
+
+                return response()->json(['message' => 'Contact marked as unread'], 200);
+            }
+
+            return response()->json(['message' => 'Contact already marked as unread'], 200);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error($ex->getMessage() . " on line: " . $ex->getLine());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
     }
