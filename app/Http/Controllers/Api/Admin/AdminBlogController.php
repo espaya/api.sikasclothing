@@ -300,6 +300,46 @@ class AdminBlogController extends Controller
         }
     }
 
+    public function destroy($id)
+    {
+        DB::beginTransaction();
+
+        try {
+
+            $post = Blog::with(['postTags', 'comment'])->find($id);
+
+            if (!$post) {
+                return response()->json(['message' => 'Post not found'], 404);
+            }
+
+            // delete featured image if exists
+            if (!$post->featured_image && Storage::disk('public')->exists($post->featured_image)) {
+                Storage::disk('public')->delete($post->featured_image);
+            }
+
+            // Delete associated tags
+            if ($post->postTags()->exists()) {
+                $post->postTags()->delete();
+            }
+
+            // Delete associated comments
+            if ($post->comment()->exists()) {
+                $post->comment()->delete();
+            }
+
+            // Delete the pos
+            $post->delete();
+
+            DB::commit();
+
+            return response()->json(['message' => 'Post deleted successfullly'], 200);
+        } catch (Exception $ex) {
+            DB::rollBack();
+            Log::error($ex->getMessage() . 'on line: ' . $ex->getLine());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
     public function fetchComments()
     {
         try {
