@@ -18,10 +18,124 @@ class AdminBlogController extends Controller
     public function index()
     {
         try {
-            $blog = Blog::paginate(10);
+            $blog = Blog::with('category:id,category_name')->paginate(10);
 
             return response()->json($blog, 200);
         } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    public function edit($slug)
+    {
+        try {
+            $blog = Blog::with(['postTags', 'category'])->where('slug', $slug)->first();
+
+            if (!$blog) {
+                return response()->json(['message' => 'Post Not Found!'], 404);
+            }
+
+            return response()->json($blog, 200);
+        } catch (Exception $ex) {
+            Log::error($ex->getMessage());
+            return response()->json(['message' => 'An unexpected error occurred'], 500);
+        }
+    }
+
+    public function update(Request $request, $slug)
+    {
+        Log::info($request->featured_image);
+        // Validation logic here (similar to store method)
+        $request->validate([
+            'title' => ['required', 'string'],
+            'category' => ['required'],
+            'tags' => ['nullable', 'array'],
+            'tags.*' => ['string'],
+            'content' => ['required', 'string'],
+            'status' => ['required', 'in:draft,published'],
+            'featured_image' => ['nullable', 'file', 'mimes:jpg,jpeg,webp,png'],
+            'comments_enabled' => ['required', 'in:0,1'],
+            'published_at' => ['nullable']
+        ], [
+            'title.required' => 'This field is required',
+            'title.string' => 'Invalid input',
+
+            'category.required' => 'This field is required',
+
+            'tags.required' => 'This field is required',
+            'tags.array' => 'Invalid format',
+            'tags.string' => 'Invalid input',
+
+            'content.required' => 'This field is required',
+            'content.string' => 'Invalid input',
+
+            'status.required' => 'This field is required',
+            'status.in' => 'Invalid status type',
+
+            'featured_image.required' => 'This field is required',
+            'featured_image.mimes' => 'Invalid image',
+
+            'comments_enabled.required' => 'This field is required'
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $blog = Blog::where('slug', $slug)->first();
+
+            if (!$blog) {
+                return response()->json(['message' => 'Post Not Found!'], 404);
+            }
+
+            // Update basic fields
+            $blog->fill([
+                'title' => $request->title,
+                'category' => (string) $request->category,
+                'content' => $request->content,
+                'status' => $request->status,
+                'comments_enabled' => (bool) $request->comments_enabled,
+                'published_at' => $request->published_at,
+            ]);
+
+            // ✅ Handle featured image only if a new file is uploaded
+            if ($request->hasFile('featured_image')) {
+                $file      = $request->file('featured_image');
+                $directory = 'blogs';
+                $filename  = uniqid() . '_' . $file->getClientOriginalName();
+
+                if (!Storage::disk('public')->exists($directory)) {
+                    Storage::disk('public')->makeDirectory($directory);
+                }
+
+                // Delete old image if it exists
+                if ($blog->featured_image && Storage::disk('public')->exists($blog->featured_image)) {
+                    Storage::disk('public')->delete($blog->featured_image);
+                }
+
+                // Upload new image
+                Storage::disk('public')->putFileAs($directory, $file, $filename);
+                $blog->featured_image = $directory . '/' . $filename;
+            }
+
+            // Update only if there are changes
+            if ($blog->isDirty()) {
+                $blog->save();
+            }
+
+            // Update tags if changed
+            if ($request->filled('tags')) {
+                $tagsJson = json_encode($request->tags);
+                if ($blog->postTags()->first()?->tag !== $tagsJson) {
+                    $blog->postTags()->update(['tag' => $tagsJson]);
+                }
+            }
+
+            DB::commit();
+
+            return response()->json(['message' => 'Post updated successfully'], 200);
+        } catch (Exception $ex) {
+            DB::rollBack();
             Log::error($ex->getMessage());
             return response()->json(['message' => 'An unexpected error occurred'], 500);
         }
@@ -95,8 +209,6 @@ class AdminBlogController extends Controller
 
             'comments_enabled.required' => 'This field is required'
         ]);
-
-        Log::info('Category: ' . $request->category);
 
         DB::beginTransaction();
 

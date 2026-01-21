@@ -176,6 +176,10 @@ Route::middleware(['web', 'admin', 'prevent.back', EnsureFrontendRequestsAreStat
     Route::get('/admin/all-orders', [AdminOrdersController::class, 'index']);
     Route::get('/admin/get-order/{order_number}', [AdminOrdersController::class, 'view']);
     Route::post('/admin/update-order-options/{id}', [AdminOrdersController::class, 'updateOrderOptions']);
+
+     Route::get('/blog/get/{slug}', [AdminBlogController::class, 'edit']);
+      Route::post('/blog/update/{slug}', [AdminBlogController::class, 'update']);
+
 });
 
 
